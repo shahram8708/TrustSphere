@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  {% block meta %}
+  <meta name="description" content="TrustSphere Privacy First Identity Trust Platform for Banking">
+  <meta property="og:title" content="TrustSphere Identity Platform">
+  <meta property="og:description" content="Privacy First, Risk Based Identity Trust Framework for Banking">
+  <meta property="og:type" content="website">
+  {% endblock %}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#0B1F4E">
+  <meta name="color-scheme" content="light">
+  <meta name="application-name" content="TrustSphere">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TrustSphere">
+  <meta name="apple-touch-fullscreen" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-TileColor" content="#0B1F4E">
+  <meta name="msapplication-TileImage" content="{{ url_for('static', filename='img/icon-192.png') }}">
+  <meta name="msapplication-tap-highlight" content="no">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/icon-192.png') }}">
+  <link rel="apple-touch-icon" sizes="192x192" href="{{ url_for('static', filename='img/icon-192.png') }}">
+  <link rel="apple-touch-icon" sizes="512x512" href="{{ url_for('static', filename='img/icon-512.png') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/icon-192.png') }}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='img/icon-512.png') }}">
+  <title>{% block title %}TrustSphere{% endblock %} | TrustSphere Identity Platform</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body
+  data-admin-portal="{{ 'true' if request.endpoint and request.endpoint.startswith('admin.') else 'false' }}"
+  data-user-id="{{ current_user.id if current_user.is_authenticated else '' }}"
+  data-sdk="{{ body_sdk | default('') }}"
+  {% block body_attrs %}{% endblock %}
+>
+  {% block header %}{% include "partials/_header.html" %}{% endblock %}
+  {% include "partials/_flash_messages.html" %}
+  {% block content %}{% endblock %}
+  {% block footer %}{% include "partials/_footer.html" %}{% endblock %}
+
+  <div id="ts-toast-container" class="ts-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="modal fade" id="ts-ios-install-modal" tabindex="-1" aria-labelledby="ts-ios-install-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill text-bg-warning">TS</span>
+            <h2 class="modal-title fs-5 mb-0" id="ts-ios-install-title">Install TrustSphere</h2>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <ol class="list-group list-group-numbered mb-4">
+            <li class="list-group-item d-flex align-items-start gap-3">
+              <i class="bi bi-box-arrow-up text-primary fs-4" aria-hidden="true"></i>
+              <span><strong>Step</strong> Tap the Share button at the bottom of Safari.</span>
+            </li>
+            <li class="list-group-item d-flex align-items-start gap-3">
+              <i class="bi bi-list-ul text-primary fs-4" aria-hidden="true"></i>
+              <span><strong>Step</strong> Scroll down and tap Add to Home Screen.</span>
+            </li>
+            <li class="list-group-item d-flex align-items-start gap-3">
+              <i class="bi bi-plus-square text-primary fs-4" aria-hidden="true"></i>
+              <span><strong>Step</strong> Tap Add in the top right corner to install.</span>
+            </li>
+          </ol>
+          <div class="mx-auto border rounded-4 bg-light p-3" style="max-width: 280px;">
+            <div class="rounded-4 bg-white border p-3">
+              <div class="mx-auto mb-3 rounded-pill bg-secondary-subtle" style="width: 44px; height: 4px;"></div>
+              <div class="d-flex align-items-center gap-2 rounded border border-warning p-2 fw-semibold text-primary">
+                <i class="bi bi-bookmark-plus"></i>
+                <span>Add to Home Screen</span>
+              </div>
+              <div class="d-flex align-items-center gap-2 rounded border p-2 mt-2 text-muted">
+                <i class="bi bi-shield-check"></i>
+                <span>TrustSphere</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/pwa-install.js') }}"></script>
+  {% block scripts %}{% endblock %}
+  <script>
+    (function () {
+      if (!("serviceWorker" in navigator)) {
+        return;
+      }
+      if (window.TrustSphere && typeof window.TrustSphere.registerServiceWorker === "function") {
+        window.TrustSphere.registerServiceWorker();
+        return;
+      }
+      navigator.serviceWorker.register("/sw.js", { scope: "/" })
+        .then(function (registration) {
+          if (registration.waiting && navigator.serviceWorker.controller) {
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+          registration.addEventListener("updatefound", function () {
+            var worker = registration.installing;
+            if (!worker) {
+              return;
+            }
+            worker.addEventListener("statechange", function () {
+              if (worker.state === "installed" && navigator.serviceWorker.controller) {
+                worker.postMessage({ type: "SKIP_WAITING" });
+              }
+            });
+          });
+        })
+        .catch(function (error) {
+          console.warn("TrustSphere service worker registration failed", error);
+        });
+    })();
+  </script>
+</body>
+</html>

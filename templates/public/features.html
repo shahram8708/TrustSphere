@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Features{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Explore the TrustSphere identity trust modules for risk scoring, device intelligence, biometrics, KYC, recovery, PAM, step up orchestration, and SOC workflows.">
+<meta property="og:title" content="TrustSphere Features">
+<meta property="og:description" content="Eight modules for privacy first banking identity trust.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ts-feature-nav {
+    top: 4.25rem;
+    z-index: 1010;
+  }
+
+  .ts-feature-icon {
+    font-size: 3rem;
+    color: var(--ts-secondary);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+  <section class="py-5 ts-bg-primary text-white">
+    <div class="container py-4">
+      <h1 class="display-5 fw-bold text-white">TrustSphere Feature Stack</h1>
+      <p class="lead text-white-50 mb-0">Eight connected modules for continuous identity trust across customers, employees, devices, onboarding, recovery, and security operations.</p>
+    </div>
+  </section>
+
+  <div class="bg-white border-bottom sticky-top ts-feature-nav">
+    <div class="container py-2 overflow-auto">
+      <nav class="nav nav-pills flex-nowrap gap-2">
+        {% for feature in features %}
+        <a class="nav-link text-nowrap" href="#feature-{{ feature.id }}">{{ feature.id }}. {{ feature.name }}</a>
+        {% endfor %}
+      </nav>
+    </div>
+  </div>
+
+  {% for feature in features %}
+  <section id="feature-{{ feature.id }}" class="py-5 {% if loop.index is odd %}bg-white{% else %}bg-light{% endif %}">
+    <div class="container py-4">
+      <div class="row align-items-center g-4 mb-4">
+        <div class="col-lg-8">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge text-bg-info fs-6">Feature {{ feature.id }}</span>
+            <i class="bi {{ feature.icon }} ts-feature-icon"></i>
+          </div>
+          <h2 class="h1 mt-3">{{ feature.name }}</h2>
+          <p class="lead text-muted">{{ feature.tagline }}</p>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="ts-card h-100">
+            <h3 class="h5">What It Does</h3>
+            <p class="text-muted">{{ feature.description }}</p>
+            <h3 class="h5">Why It Exists</h3>
+            <p class="text-muted">{{ feature.why_it_exists }}</p>
+            <h3 class="h6">Data Required</h3>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              {% for item in feature.data_inputs %}
+              <span class="badge text-bg-light border">{{ item }}</span>
+              {% endfor %}
+            </div>
+            <h3 class="h6">Output Generated</h3>
+            <div class="d-flex flex-wrap gap-2">
+              {% for item in feature.outputs %}
+              <span class="badge text-bg-info">{{ item }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card h-100 shadow-sm">
+            <div class="card-header fw-semibold">User Workflow</div>
+            <ol class="list-group list-group-numbered list-group-flush">
+              {% for step in feature.user_workflow_steps %}
+              <li class="list-group-item d-flex gap-2">
+                <span><i class="bi bi-check-circle text-success me-2"></i>{{ step }}</span>
+              </li>
+              {% endfor %}
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion mt-4" id="featureAccordion{{ feature.id }}">
+        <div class="accordion-item">
+          <h3 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#featureDetail{{ feature.id }}" aria-expanded="false" aria-controls="featureDetail{{ feature.id }}">
+              Technical Details
+            </button>
+          </h3>
+          <div id="featureDetail{{ feature.id }}" class="accordion-collapse collapse" data-bs-parent="#featureAccordion{{ feature.id }}">
+            <div class="accordion-body text-muted">{{ feature.technical_details }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+</main>
+{% endblock %}

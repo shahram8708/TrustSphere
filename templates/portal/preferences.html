@@ -1,0 +1,77 @@
+{% extends "base_portal.html" %}
+{% from "macros/form_macros.html" import render_checkbox, render_field, render_select %}
+
+{% block title %}Security Preferences{% endblock %}
+
+{% block portal_content %}
+<div class="ts-portal-wrapper">
+  <div class="mb-4">
+    <h3 class="mb-1">Security Preferences</h3>
+    <p class="text-muted mb-0">Customise how TrustSphere protects and communicates with you.</p>
+  </div>
+
+  <form method="post" action="{{ url_for('portal.preferences') }}" class="bg-white border rounded shadow-sm p-3 p-md-4">
+    {{ form.hidden_tag() }}
+
+    <section class="ts-preferences-section mb-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-shield-lock text-secondary"></i>
+        <h4 class="h6 mb-0">Step Up Verification</h4>
+      </div>
+      {{ render_select(form.preferred_stepup_method) }}
+      <div class="small text-muted">
+        Push notifications are fastest when a trusted mobile device is available. SMS codes work across most phones. Biometric verification uses your banking app when supported by your bank.
+      </div>
+    </section>
+
+    <section class="ts-preferences-section mb-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-bell text-secondary"></i>
+        <h4 class="h6 mb-0">Alert Notifications</h4>
+      </div>
+      {{ render_checkbox(form.email_alerts_enabled) }}
+      {{ render_checkbox(form.sms_alerts_enabled) }}
+      {{ render_checkbox(form.new_device_alert) }}
+      {{ render_checkbox(form.foreign_login_alert) }}
+      {{ render_checkbox(form.high_value_transaction_alert) }}
+      <div id="ts-threshold-wrapper">
+        {{ render_field(form.transaction_alert_threshold, placeholder='50000.00') }}
+      </div>
+    </section>
+
+    <section class="ts-preferences-section mb-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-translate text-secondary"></i>
+        <h4 class="h6 mb-0">Regional Settings</h4>
+      </div>
+      {{ render_select(form.language) }}
+      <p class="small text-muted mb-0">Language changes will take effect on your next login session.</p>
+    </section>
+
+    <button class="btn btn-secondary w-100" type="submit">{{ form.submit.label.text }}</button>
+    <div class="text-center mt-3">
+      <a href="{{ url_for('portal.dashboard') }}">Back to Dashboard</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var checkbox = document.getElementById("high_value_transaction_alert");
+    var wrapper = document.getElementById("ts-threshold-wrapper");
+    function syncThresholdVisibility() {
+      if (!checkbox || !wrapper) {
+        return;
+      }
+      wrapper.style.display = checkbox.checked ? "" : "none";
+    }
+    if (checkbox) {
+      checkbox.addEventListener("change", syncThresholdVisibility);
+    }
+    syncThresholdVisibility();
+  });
+</script>
+{% endblock %}

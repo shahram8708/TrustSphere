@@ -1,0 +1,38 @@
+{% set modal_id = modal_id | default('ts-confirm-modal') %}
+{% set modal_title = modal_title | default('Confirm Action') %}
+{% set modal_body = modal_body | default('Please confirm this action.') %}
+{% set confirm_method = confirm_method | default('POST') %}
+{% set confirm_btn_text = confirm_btn_text | default('Confirm') %}
+{% set confirm_btn_class = confirm_btn_class | default('btn-danger') %}
+{% set cancel_btn_text = cancel_btn_text | default('Cancel') %}
+<div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ confirm_url }}">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="{{ modal_id }}-title">{{ modal_title }}</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          {% if form is defined and form %}
+          {{ form.hidden_tag() }}
+          {% else %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% endif %}
+          {% if confirm_method != 'POST' %}
+          <input type="hidden" name="_method" value="{{ confirm_method }}">
+          {% endif %}
+          <p class="mb-0">{{ modal_body }}</p>
+          {% if include_notes_field | default(false) %}
+          <label class="form-label mt-3" for="{{ modal_id }}-notes">Analyst Notes</label>
+          <textarea class="form-control" id="{{ modal_id }}-notes" name="analyst_notes" rows="3"></textarea>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ cancel_btn_text }}</button>
+          <button type="submit" class="btn {{ confirm_btn_class }}">{{ confirm_btn_text }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

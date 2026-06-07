@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<main class="min-vh-100 d-flex align-items-center justify-content-center bg-light px-3 py-5">
+  <div class="text-center" style="max-width: 640px;">
+    <a href="{{ url_for('public.index') }}"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt="TrustSphere" height="48" class="mb-4"></a>
+    <i class="bi bi-exclamation-octagon-fill display-4 text-danger d-block"></i>
+    <div class="display-1 fw-bold text-danger">500</div>
+    <h1 class="h2">Server Error</h1>
+    <p class="lead text-muted">Something went wrong on our end. Our team has been notified and is working on a fix.</p>
+    <p class="text-muted">Your session and data are safe. Please try again in a few minutes.</p>
+    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-4">
+      <button type="button" class="btn btn-warning" onclick="location.reload()">Try Again</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('public.index') }}">Return Home</a>
+    </div>
+    <p class="small text-muted mt-4">If this problem persists, please contact support at support@trustsphere.io</p>
+  </div>
+</main>
+{% endblock %}

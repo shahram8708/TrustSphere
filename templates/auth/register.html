@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% from "macros/form_macros.html" import render_field, render_checkbox %}
+
+{% block title %}Register{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Register a bank or financial institution for TrustSphere.">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<main class="min-vh-100 d-flex justify-content-center align-items-center bg-light px-3 py-5">
+  <div class="card shadow-lg w-100" style="max-width: 600px;">
+    <div class="card-header ts-bg-primary text-white text-center p-4">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="TrustSphere" height="48" class="mb-3">
+      <h1 class="h4 text-white mb-1">Register Your Institution</h1>
+      <p class="text-white-50 mb-0">Set up TrustSphere for your bank or financial institution</p>
+    </div>
+    <div class="card-body p-4">
+      <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+        <span class="badge text-bg-info">1 Institution Details</span>
+        <span class="badge text-bg-light border">2 Admin Account</span>
+        <span class="badge text-bg-light border">3 Plan Selection</span>
+      </div>
+
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <fieldset class="border rounded p-3 mb-4">
+          <legend class="float-none w-auto px-2 h6">Institution Details</legend>
+          {{ render_field(form.institution_name) }}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.institution_domain.id }}">
+              {{ form.institution_domain.label.text }}
+              <i class="bi bi-info-circle text-info ms-1" data-bs-toggle="tooltip" title="Used for API integration and JWT validation."></i>
+            </label>
+            {{ form.institution_domain(class=("form-control" ~ (" is-invalid" if form.institution_domain.errors else "")), placeholder="yourbank.com") }}
+            {% for error in form.institution_domain.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+            {% if form.institution_domain.description %}
+            <div class="form-text text-muted">{{ form.institution_domain.description }}</div>
+            {% endif %}
+          </div>
+          {{ render_field(form.plan_tier) }}
+        </fieldset>
+
+        <fieldset class="border rounded p-3 mb-4">
+          <legend class="float-none w-auto px-2 h6">Admin Account</legend>
+          {{ render_field(form.admin_email) }}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.admin_password.id }}">{{ form.admin_password.label.text }}</label>
+            <div class="input-group">
+              {{ form.admin_password(class=("form-control" ~ (" is-invalid" if form.admin_password.errors else "")), placeholder="Create a strong password") }}
+              <button class="btn btn-outline-secondary" type="button" data-password-toggle="#admin_password" aria-label="Show password">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% for error in form.admin_password.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+            <div class="progress mt-2" style="height: 0.5rem;">
+              <div id="passwordStrengthBar" class="progress-bar" style="width: 0%;"></div>
+            </div>
+            <div id="passwordStrengthLabel" class="small text-muted mt-1">Password strength</div>
+          </div>
+          {{ render_field(form.confirm_password) }}
+        </fieldset>
+
+        <div class="form-check mb-3">
+          {{ form.agree_terms(class=("form-check-input" ~ (" is-invalid" if form.agree_terms.errors else ""))) }}
+          <label class="form-check-label" for="{{ form.agree_terms.id }}">
+            I agree to the <a href="{{ url_for('public.compliance') }}">Terms of Service</a> and <a href="{{ url_for('public.compliance') }}">Privacy Policy</a>
+          </label>
+          {% for error in form.agree_terms.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-warning w-100">Create TrustSphere Account</button>
+      </form>
+
+      <div class="text-center mt-3">
+        <a href="{{ url_for('auth.login') }}">Already have an account? Sign In</a>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    function setupPasswordToggle() {
+      document.querySelectorAll("[data-password-toggle]").forEach(function (button) {
+        var input = document.querySelector(button.getAttribute("data-password-toggle"));
+        if (!input) {
+          return;
+        }
+        button.addEventListener("click", function () {
+          var show = input.type === "password";
+          input.type = show ? "text" : "password";
+          button.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+          button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+        });
+      });
+    }
+
+    function setupStrengthMeter() {
+      var input = document.getElementById("admin_password");
+      var bar = document.getElementById("passwordStrengthBar");
+      var label = document.getElementById("passwordStrengthLabel");
+      if (!input || !bar || !label) {
+        return;
+      }
+      input.addEventListener("input", function () {
+        var value = input.value || "";
+        var score = 0;
+        if (value.length >= 10) score += 1;
+        if (/[A-Z]/.test(value)) score += 1;
+        if (/[a-z]/.test(value)) score += 1;
+        if (/\d/.test(value)) score += 1;
+        if (/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(value)) score += 1;
+
+        var labels = ["", "Weak", "Fair", "Good", "Strong", "Very Strong"];
+        var classes = ["bg-danger", "bg-danger", "bg-danger", "bg-warning", "bg-info", "bg-success"];
+        bar.style.width = score * 20 + "%";
+        bar.classList.remove("bg-danger", "bg-warning", "bg-info", "bg-success");
+        bar.classList.add(classes[score]);
+        label.textContent = labels[score] || "Password strength";
+      });
+    }
+
+    setupPasswordToggle();
+    setupStrengthMeter();
+  })();
+</script>
+{% endblock %}

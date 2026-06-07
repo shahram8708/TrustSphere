@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-labelledby="title desc">
+  <title id="title">TrustSphere</title>
+  <desc id="desc">Gold shield logo with teal trust mark and TrustSphere wordmark.</desc>
+  <rect width="360" height="96" fill="#0B1F4E"/>
+  <g transform="translate(24 14)">
+    <path d="M34 2c14 8 26 10 34 10v23c0 22-13 38-34 49C13 73 0 57 0 35V12c8 0 20-2 34-10z" fill="none" stroke="#C9A84C" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M34 14c9 5 18 7 26 8v13c0 17-9 29-26 39C17 64 8 52 8 35V22c8-1 17-3 26-8z" fill="#006D77"/>
+    <circle cx="34" cy="36" r="16" fill="none" stroke="#C9A84C" stroke-width="4"/>
+    <path d="M23 28h22M34 28v26" fill="none" stroke="#F8F9FA" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <text x="104" y="42" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">TrustSphere</text>
+  <text x="106" y="66" fill="#C9A84C" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="500">Identity trust for banking security</text>
+</svg>

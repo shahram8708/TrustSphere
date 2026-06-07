@@ -1,0 +1,278 @@
+{% extends "base_admin.html" %}
+{% from "partials/_risk_badge.html" import risk_badge %}
+
+{% block title %}SOC Dashboard{% endblock %}
+{% block page_title %}Security Operations Dashboard{% endblock %}
+
+{% block admin_content %}
+{% if current_user.is_super_admin %}
+<div class="alert alert-secondary d-flex flex-wrap align-items-center justify-content-between gap-3">
+  <div class="d-flex align-items-center gap-2">
+    <i class="bi bi-building"></i>
+    <span class="fw-semibold">Viewing:</span>
+  </div>
+  <form id="ts-dashboard-institution-form" class="d-flex align-items-center gap-2" method="post" action="{{ url_for('admin.set_institution_filter') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select id="ts-institution-filter" name="institution_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+      <option value="all" {% if current_institution_filter == 'all' %}selected{% endif %}>All Institutions</option>
+      {% for institution in institutions_list %}
+      <option value="{{ institution.id }}" {% if current_institution_filter == institution.id %}selected{% endif %}>{{ institution.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <div>
+    {% if selected_institution %}
+    <span class="badge text-bg-info">Filtered to {{ selected_institution.name }}</span>
+    <form class="d-inline" method="post" action="{{ url_for('admin.set_institution_filter') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="institution_id" value="all">
+      <button class="btn btn-link btn-sm p-0 ms-2" type="submit" aria-label="Clear institution filter">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </form>
+    {% else %}
+    <span class="badge text-bg-light">Global view</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <a class="ts-kpi-card d-block h-100 text-decoration-none" href="{{ url_for('admin.sessions', is_active='true') }}">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fs-2 fw-bold text-dark">{{ active_sessions_count }}</div>
+          <div class="text-muted small">Active Sessions</div>
+        </div>
+        <i class="bi bi-activity fs-3 text-info"></i>
+      </div>
+      <div class="small mt-3 {% if active_sessions_trend == 'up' %}text-danger{% elif active_sessions_trend == 'down' %}text-success{% else %}text-muted{% endif %}">
+        {% if active_sessions_trend == 'up' %}
+        <i class="bi bi-arrow-up-circle-fill"></i>
+        {% elif active_sessions_trend == 'down' %}
+        <i class="bi bi-arrow-down-circle-fill"></i>
+        {% else %}
+        <i class="bi bi-dash-circle"></i>
+        {% endif %}
+        {{ active_sessions_delta }}% from yesterday
+      </div>
+    </a>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <a class="ts-kpi-card d-block h-100 text-decoration-none {% if open_alerts_by_severity.critical > 0 %}ts-border-danger{% elif open_alerts_by_severity.high > 0 %}ts-border-warning{% endif %}" href="{{ url_for('admin.alerts', status='open') }}">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fs-2 fw-bold text-dark">{{ total_open_alerts }}</div>
+          <div class="text-muted small">Open Alerts</div>
+        </div>
+        <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
+      </div>
+      <div class="small text-muted mt-3 d-flex flex-wrap gap-2">
+        <span><span class="ts-severity-dot critical"></span>{{ open_alerts_by_severity.critical }} critical</span>
+        <span><span class="ts-severity-dot high"></span>{{ open_alerts_by_severity.high }} high</span>
+        <span><span class="ts-severity-dot medium"></span>{{ open_alerts_by_severity.medium }} medium</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="ts-kpi-card h-100">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fs-2 fw-bold text-dark">{{ risk_events_today }}</div>
+          <div class="text-muted small">Risk Events Today</div>
+        </div>
+        <i class="bi bi-bar-chart-line fs-3 text-primary"></i>
+      </div>
+      <div class="small mt-3 {% if risk_events_trend == 'up' %}text-danger{% elif risk_events_trend == 'down' %}text-success{% else %}text-muted{% endif %}">
+        {% if risk_events_trend == 'up' %}
+        <i class="bi bi-arrow-up-circle-fill"></i>
+        {% elif risk_events_trend == 'down' %}
+        <i class="bi bi-arrow-down-circle-fill"></i>
+        {% else %}
+        <i class="bi bi-dash-circle"></i>
+        {% endif %}
+        {{ risk_events_delta }} compared to yesterday
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="ts-kpi-card h-100 {% if system_health.overall == 'critical' %}ts-border-danger{% elif system_health.overall == 'degraded' %}ts-border-warning{% else %}ts-border-success{% endif %}">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div>
+          {% if system_health.overall == 'critical' %}
+          <span class="badge text-bg-danger">Critical Issues</span>
+          {% elif system_health.overall == 'degraded' %}
+          <span class="badge text-bg-warning">Degraded</span>
+          {% else %}
+          <span class="badge text-bg-success">All Systems Operational</span>
+          {% endif %}
+          <div class="text-muted small mt-2">System Health</div>
+        </div>
+        <i class="bi bi-heart-pulse fs-3 {% if system_health.overall == 'critical' %}text-danger{% elif system_health.overall == 'degraded' %}text-warning{% else %}text-success{% endif %}"></i>
+      </div>
+      <div class="small mt-3 d-flex flex-wrap gap-2">
+        <span class="badge text-bg-light">DB {{ system_health.db }}</span>
+        <span class="badge text-bg-light">Cache {{ system_health.redis }}</span>
+        <span class="badge text-bg-light">Queue {{ system_health.celery }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between gap-3">
+        <div class="fw-semibold"><i class="bi bi-list-ul me-2"></i>Priority Alert Queue</div>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.alerts') }}">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 ts-admin-table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Severity</th>
+              <th scope="col">Alert</th>
+              <th scope="col">Type</th>
+              <th scope="col">User</th>
+              <th scope="col">Time</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for alert in top_alerts %}
+            <tr class="{% if alert.severity == 'critical' %}table-danger{% elif alert.severity == 'high' %}table-warning{% endif %}">
+              <td><span class="ts-priority-badge">{{ loop.index }}</span></td>
+              <td><span class="badge bg-{{ alert.get_severity_badge_color() }}">{{ alert.severity|title }}</span></td>
+              <td class="fw-semibold text-truncate" style="max-width: 14rem;">{{ alert.title }}</td>
+              <td>{{ alert.get_alert_type_display() }}</td>
+              <td>{% if alert.user %}<span class="ts-masked-id">{{ alert.user.get_masked_id() }}</span>{% else %}<span class="text-muted">Protected</span>{% endif %}</td>
+              <td>{% if alert.created_at %}<span data-timestamp="{{ alert.created_at.isoformat() }}">{{ alert.created_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}</td>
+              <td><a class="btn btn-sm btn-primary" href="{{ url_for('admin.alert_detail', alert_id=alert.id) }}">Investigate</a></td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7">
+                <div class="ts-empty-state py-4"><i class="bi bi-shield-check"></i><span>No open alerts.</span></div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer small text-muted">Showing top 10 by ML priority score</div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <div class="fw-semibold"><i class="bi bi-pie-chart me-2"></i>Session Risk Distribution</div>
+        <div class="small text-muted">Today's sessions by peak risk category</div>
+      </div>
+      <div class="card-body">
+        <div class="ts-chart-box mx-auto mb-4">
+          <canvas id="ts-risk-dist-chart" width="220" height="220" data-chart-labels='{{ ["Low", "Medium", "High", "Critical"] | tojson }}' data-chart-values='{{ [session_risk_distribution.Low, session_risk_distribution.Medium, session_risk_distribution.High, session_risk_distribution.Critical] | tojson }}'></canvas>
+        </div>
+        {% for label, color in [("Low", "success"), ("Medium", "warning"), ("High", "danger"), ("Critical", "danger")] %}
+        {% set count = session_risk_distribution[label] %}
+        {% set pct = ((count / session_risk_total) * 100) | round(0, "floor") if session_risk_total else 0 %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small mb-1">
+            <span>{{ label }}</span>
+            <span>{{ count }} sessions {{ pct|int }}%</span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuenow="{{ pct|int }}" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar bg-{{ color }}" style="width: {{ pct|int }}%"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div class="fw-semibold"><i class="bi bi-clock-history me-2"></i>Recent Risk Events</div>
+    <div class="d-flex align-items-center gap-3">
+      <span class="badge text-bg-light">Last 24 hours</span>
+      <span id="ts-refresh-indicator" class="badge text-bg-success"><span class="ts-live-dot me-1"></span>Auto refreshing</span>
+    </div>
+  </div>
+  <div class="list-group list-group-flush ts-scroll-panel">
+    {% for event in recent_events %}
+    {% set action = event.cre_response_action %}
+    {% set color = action_colors.get(action, 'secondary') %}
+    {% set icon = action_icons.get(action, 'bi-activity') %}
+    <div class="list-group-item d-flex align-items-start gap-3">
+      <div class="ts-event-icon bg-{{ color }}"><i class="bi {{ icon }}"></i></div>
+      <div class="flex-grow-1">
+        <div class="fw-semibold">{{ event_display(event.event_type) }}</div>
+        <div class="small text-muted d-flex flex-wrap gap-2">
+          {% if event.session and event.session.user %}
+          <span class="ts-masked-id">{{ event.session.user.get_masked_id() }}</span>
+          {% endif %}
+          {% if event.session %}
+          <span class="badge text-bg-light">{{ channel_label(event.session.channel) }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="text-end">
+        {% if event.risk_delta > 0 %}
+        <span class="badge text-bg-danger">+{{ event.risk_delta }}</span>
+        {% elif event.risk_delta < 0 %}
+        <span class="badge text-bg-success">{{ event.risk_delta }}</span>
+        {% else %}
+        <span class="badge text-bg-secondary">0</span>
+        {% endif %}
+        <div class="small text-muted mt-1" data-timestamp="{{ event.evaluated_at.isoformat() }}">{{ event.evaluated_at.strftime("%Y-%m-%d %H:%M") }}</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="ts-empty-state"><i class="bi bi-activity"></i><span>No recent risk events.</span></div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between gap-3">
+    <div class="fw-semibold"><i class="bi bi-sliders me-2"></i>Active Risk Policy</div>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.policy') }}">Configure</a>
+  </div>
+  <div class="card-body">
+    {% if policy_status %}
+    <div class="row g-3 align-items-center">
+      <div class="col-lg-4">
+        <div class="fw-semibold">{{ policy_status.policy.policy_name }}</div>
+        <div class="small text-muted">Activated {% if policy_status.policy.activated_at %}<span data-timestamp="{{ policy_status.policy.activated_at.isoformat() }}">{{ policy_status.policy.activated_at.strftime("%Y-%m-%d") }}</span>{% else %}recently{% endif %}</div>
+      </div>
+      <div class="col-lg-4">
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge text-bg-success">Low {{ policy_status.threshold_low }}</span>
+          <span class="badge text-bg-warning">Medium {{ policy_status.threshold_medium }}</span>
+          <span class="badge text-bg-danger">High {{ policy_status.threshold_high }}</span>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="small text-muted mb-1">Alert hits in the last 24 hours</div>
+        <div class="d-flex flex-wrap gap-2">
+          {% for level, count in policy_status.alert_hits.items() %}
+          <span class="badge text-bg-light">{{ level|title }} {{ count }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning mb-0 d-flex align-items-center justify-content-between gap-3">
+      <span>No active policy configured. Using platform defaults.</span>
+      <a class="btn btn-sm btn-warning" href="{{ url_for('admin.policy') }}">Configure Policy</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Onboarding Detail{% endblock %}
+{% block page_title %}KYC Application {{ application.application_ref }}{% endblock %}
+
+{% block admin_content %}
+<div class="mb-3">
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.onboarding') }}"><i class="bi bi-arrow-left me-1"></i>Back to Queue</a>
+</div>
+
+<script type="application/json" id="ts-onboarding-risk-factors">{{ risk_factors_json | safe }}</script>
+
+<div class="row g-4">
+  <div class="col-xl-4">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-speedometer2 me-2"></i>Composite Risk</div>
+      <div class="card-body">
+        <div class="ts-chart-box mx-auto mb-3">
+          <canvas id="ts-kyc-risk-gauge" width="240" height="180" data-risk-score="{{ application.composite_risk_score }}"></canvas>
+        </div>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <span class="badge bg-{{ application.get_decision_badge_color() }}">{{ application.decision|replace("_", " ")|title }}</span>
+          {% if application.watchlist_match %}<span class="badge text-bg-danger">Watchlist Match</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-check2-square me-2"></i>Decision</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('admin.onboarding_decide', app_id=application.id) }}">
+          {{ decision_form.hidden_tag() }}
+          <div class="mb-3">
+            <label class="form-label" for="{{ decision_form.decision.id }}">{{ decision_form.decision.label.text }}</label>
+            {{ decision_form.decision(class="form-select") }}
+            {% for error in decision_form.decision.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ decision_form.reviewer_notes.id }}">{{ decision_form.reviewer_notes.label.text }}</label>
+            {{ decision_form.reviewer_notes(class="form-control", rows="5", placeholder="Document the reason for this decision") }}
+            {% for error in decision_form.reviewer_notes.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <button class="btn btn-primary w-100" type="submit"><i class="bi bi-send-check me-1"></i>Submit Decision</button>
+        </form>
+        {% if reviewers %}
+        <div class="small text-muted mt-3">Active reviewers in scope: {{ reviewers|length }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-8">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-person-lines-fill me-2"></i>Applicant Summary</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="small text-muted">Applicant</div>
+            <div class="fw-semibold">{{ application.applicant_name or "Protected applicant" }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Document</div>
+            <div class="fw-semibold">{{ application.document_type|replace("_", " ")|title }} <span class="ts-masked-id">{{ application.document_number_hash[:12] }}...</span></div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Submitted</div>
+            <div>{% if application.submitted_at %}<span data-timestamp="{{ application.submitted_at.isoformat() }}">{{ application.submitted_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Decided</div>
+            <div>{% if application.decided_at %}<span data-timestamp="{{ application.decided_at.isoformat() }}">{{ application.decided_at.strftime("%Y-%m-%d %H:%M") }}</span>{% else %}<span class="text-muted">Not yet decided</span>{% endif %}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-clipboard2-pulse me-2"></i>Risk Factor Breakdown</div>
+      <div class="card-body">
+        {% for factor in risk_factors %}
+        {% set pct = (factor.score * 100) | round(0, "floor") %}
+        <div class="mb-3">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+            <div class="fw-semibold">{{ factor.factor }}</div>
+            <span class="badge {% if factor.verdict == 'Pass' %}text-bg-success{% elif factor.verdict == 'Warning' %}text-bg-warning{% else %}text-bg-danger{% endif %}">{{ factor.verdict }}</span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuenow="{{ pct|int }}" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar bg-{{ 'success' if factor.verdict == 'Pass' else 'warning' if factor.verdict == 'Warning' else 'danger' }}" style="width: {{ pct|int }}%">{{ pct|int }}%</div>
+          </div>
+          <div class="small text-muted mt-1">{{ factor.explanation }} Contribution {{ "%.1f"|format(factor.contribution) }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-header fw-semibold"><i class="bi bi-camera-video me-2"></i>Liveness</div>
+          <div class="card-body">
+            <div class="fs-4 fw-bold">{{ "%.0f"|format((application.liveness_score or 0) * 100) }}%</div>
+            <div class="small text-muted">Live presence confidence</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-header fw-semibold"><i class="bi bi-file-earmark-check me-2"></i>Document</div>
+          <div class="card-body">
+            <div class="fs-4 fw-bold">{{ "%.0f"|format((application.document_authenticity_score or 0) * 100) }}%</div>
+            <div class="small text-muted">Authenticity confidence</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-header fw-semibold"><i class="bi bi-person-bounding-box me-2"></i>Synthetic</div>
+          <div class="card-body">
+            <div class="fs-4 fw-bold">{{ "%.0f"|format((application.synthetic_identity_risk or 0) * 100) }}%</div>
+            <div class="small text-muted">Synthetic identity risk</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if application.watchlist_match %}
+    <div class="card border-danger mb-4">
+      <div class="card-header fw-semibold text-danger"><i class="bi bi-shield-exclamation me-2"></i>Watchlist Match</div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for key, value in watchlist_detail.items() %}
+          <div class="col-md-6">
+            <div class="small text-muted">{{ key|replace("_", " ")|title }}</div>
+            <div class="fw-semibold">{{ value }}</div>
+          </div>
+          {% else %}
+          <div class="col-12 text-muted">No structured watchlist detail was supplied.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-clock-history me-2"></i>Audit History</div>
+      <div class="list-group list-group-flush">
+        {% for entry in audit_history %}
+        <div class="list-group-item">
+          <div class="d-flex flex-wrap justify-content-between gap-2">
+            <span class="fw-semibold">{{ entry.action }}</span>
+            {% if entry.created_at %}<span class="small text-muted" data-timestamp="{{ entry.created_at.isoformat() }}">{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}
+          </div>
+          <div class="small text-muted">{{ entry.actor_email or entry.actor_type }}</div>
+        </div>
+        {% else %}
+        <div class="ts-empty-state"><i class="bi bi-journal-check"></i><span>No audit entries yet.</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/risk-gauge.js') }}"></script>
+{% endblock %}

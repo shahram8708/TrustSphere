@@ -1,0 +1,334 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Platform Settings{% endblock %}
+{% block page_title %}Platform Settings{% endblock %}
+
+{% block admin_content %}
+<div class="accordion" id="ts-settings-accordion">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="platform-heading">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#platform-pane" aria-expanded="true" aria-controls="platform-pane">
+        <i class="bi bi-gear me-2"></i>Platform Configuration
+      </button>
+    </h2>
+    <div id="platform-pane" class="accordion-collapse collapse show" aria-labelledby="platform-heading" data-bs-parent="#ts-settings-accordion">
+      <div class="accordion-body">
+        <form method="post" action="{{ url_for('admin.settings') }}">
+          {{ form.hidden_tag() }}
+          <div class="form-check form-switch mb-3">
+            {{ form.platform_maintenance_mode(class="form-check-input") }}
+            <input type="hidden" name="platform_maintenance_mode" value="">
+            <label class="form-check-label" for="{{ form.platform_maintenance_mode.id }}">{{ form.platform_maintenance_mode.label.text }}</label>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.max_login_attempts.id }}">{{ form.max_login_attempts.label.text }}</label>
+              {{ form.max_login_attempts(class="form-control") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.session_timeout_minutes.id }}">{{ form.session_timeout_minutes.label.text }}</label>
+              {{ form.session_timeout_minutes(class="form-control") }}
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3" type="submit" name="submit_settings" value="1"><i class="bi bi-check2-circle me-1"></i>Save Platform Settings</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="institution-heading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#institution-pane" aria-expanded="false" aria-controls="institution-pane">
+        <i class="bi bi-building me-2"></i>Institution Management ({{ institutions | length }} institutions)
+      </button>
+    </h2>
+    <div id="institution-pane" class="accordion-collapse collapse" aria-labelledby="institution-heading" data-bs-parent="#ts-settings-accordion">
+      <div class="accordion-body">
+        <div class="table-responsive mb-4">
+          <table class="table table-hover align-middle mb-0 ts-admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Domain</th>
+                <th scope="col">Plan Tier</th>
+                <th scope="col">Status</th>
+                <th scope="col">Users</th>
+                <th scope="col">API Key</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inst in institutions %}
+              <tr>
+                <td class="fw-semibold">{{ inst.name }}</td>
+                <td>{{ inst.domain }}</td>
+                <td><span class="badge text-bg-light">{{ inst.get_plan_display() }}</span></td>
+                <td>{% if inst.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}</td>
+                <td>{{ user_counts.get(inst.id, 0) }}</td>
+                <td><span class="ts-masked-id">{% if inst.api_key_hash %}...{{ inst.api_key_hash[-6:] }}{% else %}Not generated{% endif %}</span></td>
+                <td>
+                  <div class="d-flex flex-wrap gap-2">
+                    <form method="post" action="{{ url_for('admin.regenerate_api_key', institution_id=inst.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-primary" type="submit" data-confirm="Regenerate this API key?">Regenerate Key</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin.toggle_institution', institution_id=inst.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-secondary" type="submit">{% if inst.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <hr>
+        <h3 class="h5 mb-3">Add New Institution</h3>
+        <form method="post" action="{{ url_for('admin.settings') }}">
+          {{ form.hidden_tag() }}
+          <div class="row g-3 align-items-end">
+            <div class="col-lg-4">
+              <label class="form-label" for="{{ form.new_institution_name.id }}">{{ form.new_institution_name.label.text }}</label>
+              {{ form.new_institution_name(class="form-control") }}
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label" for="{{ form.new_institution_domain.id }}">{{ form.new_institution_domain.label.text }}</label>
+              {{ form.new_institution_domain(class="form-control") }}
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label" for="{{ form.new_institution_plan_tier.id }}">{{ form.new_institution_plan_tier.label.text }}</label>
+              {{ form.new_institution_plan_tier(class="form-select") }}
+            </div>
+            <div class="col-lg-2">
+              <button class="btn btn-primary w-100" type="submit" name="submit_add_institution" value="1">Create Institution</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="admin-users-heading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#admin-users-pane" aria-expanded="false" aria-controls="admin-users-pane">
+        <i class="bi bi-person-gear me-2"></i>Admin Users ({{ admin_users | length }} total)
+      </button>
+    </h2>
+    <div id="admin-users-pane" class="accordion-collapse collapse" aria-labelledby="admin-users-heading" data-bs-parent="#ts-settings-accordion">
+      <div class="accordion-body">
+        <div class="table-responsive mb-4">
+          <table class="table table-hover align-middle mb-0 ts-admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Institution</th>
+                <th scope="col">Status</th>
+                <th scope="col">Last Login</th>
+                <th scope="col">MFA</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for admin in admin_users %}
+              <tr>
+                <td>{{ mask_email(admin.email) }}</td>
+                <td><span class="badge bg-{{ admin.get_role_badge_color() }}">{{ admin.get_role_display() }}</span></td>
+                <td>{% if admin.institution %}{{ admin.institution.name }}{% else %}Platform (All){% endif %}</td>
+                <td>{% if admin.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}</td>
+                <td>{% if admin.last_login_at %}<span data-timestamp="{{ admin.last_login_at.isoformat() }}">{{ admin.last_login_at.strftime("%Y-%m-%d %H:%M") }}</span>{% else %}<span class="text-muted">Never</span>{% endif %}</td>
+                <td>{% if admin.mfa_enabled %}<span class="badge text-bg-success">Enabled</span>{% else %}<span class="badge text-bg-warning">Disabled</span>{% endif %}</td>
+                <td>
+                  <form method="post" action="{{ url_for('admin.toggle_admin_user', admin_user_id=admin.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-secondary" type="submit">{% if admin.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="h5 mb-3">Create New Admin User</h3>
+        <form method="post" action="{{ url_for('admin.create_admin_user') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3 align-items-end">
+            <div class="col-lg-3">
+              <label class="form-label" for="new-admin-email">Email</label>
+              <input class="form-control" id="new-admin-email" type="email" name="email" required>
+            </div>
+            <div class="col-lg-2">
+              <label class="form-label" for="new-admin-role">Role</label>
+              <select class="form-select" id="new-admin-role" name="role">
+                {% for role in ["security_analyst", "compliance_officer", "it_admin", "read_only", "super_admin"] %}
+                <option value="{{ role }}">{{ role|replace("_", " ")|title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label" for="new-admin-institution">Institution</label>
+              <select class="form-select" id="new-admin-institution" name="institution_id">
+                <option value="">Platform (All)</option>
+                {% for inst in institutions %}
+                <option value="{{ inst.id }}">{{ inst.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-lg-2">
+              <label class="form-label" for="new-admin-password">Temporary Password</label>
+              <input class="form-control" id="new-admin-password" type="password" name="temp_password" required>
+            </div>
+            <div class="col-lg-2">
+              <button class="btn btn-primary w-100" type="submit">Create Admin</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="email-heading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#email-pane" aria-expanded="false" aria-controls="email-pane">
+        <i class="bi bi-envelope-gear me-2"></i>Email (SMTP) Configuration
+      </button>
+    </h2>
+    <div id="email-pane" class="accordion-collapse collapse" aria-labelledby="email-heading" data-bs-parent="#ts-settings-accordion">
+      <div class="accordion-body">
+        <form method="post" action="{{ url_for('admin.settings') }}">
+          {{ form.hidden_tag() }}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.mail_server.id }}">{{ form.mail_server.label.text }}</label>
+              {{ form.mail_server(class="form-control") }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.mail_port.id }}">{{ form.mail_port.label.text }}</label>
+              {{ form.mail_port(class="form-control") }}
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                {{ form.mail_use_tls(class="form-check-input") }}
+                <input type="hidden" name="mail_use_tls" value="">
+                <label class="form-check-label" for="{{ form.mail_use_tls.id }}">{{ form.mail_use_tls.label.text }}</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.mail_username.id }}">{{ form.mail_username.label.text }}</label>
+              {{ form.mail_username(class="form-control") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.mail_password.id }}">{{ form.mail_password.label.text }}</label>
+              {{ form.mail_password(class="form-control") }}
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3" type="submit" name="submit_settings" value="1">Save Email Settings</button>
+        </form>
+        <form class="mt-3" method="post" action="{{ url_for('admin.test_email') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-primary" type="submit"><i class="bi bi-send me-1"></i>Send Test Email</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="api-heading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#api-pane" aria-expanded="false" aria-controls="api-pane">
+        <i class="bi bi-key me-2"></i>API Key Management
+      </button>
+    </h2>
+    <div id="api-pane" class="accordion-collapse collapse" aria-labelledby="api-heading" data-bs-parent="#ts-settings-accordion">
+      <div class="accordion-body">
+        <div class="table-responsive mb-4">
+          <table class="table table-hover align-middle mb-0 ts-admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Institution</th>
+                <th scope="col">API Key</th>
+                <th scope="col">Last Used</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in api_keys_info %}
+              <tr>
+                <td>{{ row.institution.name }}</td>
+                <td><span class="ts-masked-id">{{ row.masked_key }}</span></td>
+                <td><span class="text-muted">N/A</span></td>
+                <td>
+                  <form method="post" action="{{ url_for('admin.regenerate_api_key', institution_id=row.institution.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-primary" type="submit" data-confirm="Regenerate this API key?">Regenerate</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="alert alert-info mb-0">
+          <div class="fw-semibold mb-2">Integration</div>
+          <div>Base URL: <code>https://yourdomain.com/api/v1</code></div>
+          <div>Authentication: <code>X API Key header</code></div>
+          <a href="{{ url_for('admin.reports') }}">Documentation</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="tasks-heading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tasks-pane" aria-expanded="false" aria-controls="tasks-pane">
+        <i class="bi bi-robot me-2"></i>Background Task Monitor
+      </button>
+    </h2>
+    <div id="tasks-pane" class="accordion-collapse collapse" aria-labelledby="tasks-heading" data-bs-parent="#ts-settings-accordion">
+      <div class="accordion-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 ts-admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Task Name</th>
+                <th scope="col">Schedule</th>
+                <th scope="col">Last Run</th>
+                <th scope="col">Status</th>
+                <th scope="col">Run</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for task in celery_tasks_status %}
+              <tr>
+                <td>{{ task.task_name|replace("_", " ")|title }}</td>
+                <td>{{ task.schedule }}</td>
+                <td>{% if task.last_run %}{{ task.last_run }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td>
+                <td>
+                  {% if task.status == "unknown" %}
+                  <span class="text-muted">Redis/Celery not available</span>
+                  {% else %}
+                  <span class="badge text-bg-success">{{ task.status|title }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="post" action="{{ url_for('admin.run_task', task_name=task.task_name) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Run Now</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="alert alert-info mt-4 mb-0">
+          <div>Background tasks require Redis and Celery worker to be running.</div>
+          <code>celery -A celery_worker worker --loglevel=info</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

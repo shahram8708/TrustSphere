@@ -1,0 +1,179 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Generate Report{% endblock %}
+{% block page_title %}Generate Report{% endblock %}
+
+{% block admin_content %}
+{% set selected_metadata = report_types.get(selected_type, {}) %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.reports') }}">Reports</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Generate</li>
+  </ol>
+</nav>
+
+<div class="mx-auto" style="max-width: 700px;">
+  <div id="ts-report-status-card">
+  {% if last_report and (last_report.get('status') == 'completed' or last_report.get('status') == 'ready') %}
+    <div class="card border-success mb-4">
+      <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fw-semibold text-success">Report Generated Successfully</div>
+          <div class="small text-muted">{{ selected_metadata.name or last_report.report_type|replace("_", " ")|title }} is ready to download.</div>
+        </div>
+        <a class="btn btn-success" href="{{ url_for('admin.reports_download', report_id=task_id) }}"><i class="bi bi-download me-1"></i>Download</a>
+      </div>
+    </div>
+  {% elif last_report and last_report.get('status') == 'pending' %}
+    <div class="card border-info mb-4">
+      <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fw-semibold text-info">Report generation in progress</div>
+          <div class="small text-muted">{{ selected_metadata.name or last_report.report_type|replace("_", " ")|title }} is being generated. This may take a few moments.</div>
+        </div>
+        <button class="btn btn-outline-info disabled"><i class="bi bi-hourglass-split me-1"></i>Generating…</button>
+      </div>
+    </div>
+  {% elif last_report and last_report.get('status') %}
+    <div class="card border-warning mb-4">
+      <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fw-semibold text-warning">Report status: {{ last_report.get('status')|capitalize }}</div>
+          <div class="small text-muted">If this looks incorrect, try generating the report again.</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <div class="fw-semibold">Configure Report Parameters</div>
+      <div class="small text-muted">{{ selected_metadata.name }}</div>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{{ url_for('admin.reports_generate', report_type=selected_type) }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+          <label class="form-label">Report Type</label>
+          <div class="form-control bg-light">{{ selected_metadata.name }}</div>
+          <input type="hidden" name="report_type" value="{{ selected_type }}">
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.date_from.id }}">{{ form.date_from.label.text }}</label>
+            {{ form.date_from(class="form-control") }}
+            {% for error in form.date_from.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.date_to.id }}">{{ form.date_to.label.text }}</label>
+            {{ form.date_to(class="form-control") }}
+            {% for error in form.date_to.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label d-block">{{ form.format.label.text }}</label>
+          <div class="btn-group w-100" role="group" aria-label="Report format">
+            <input class="btn-check" id="format-json" type="radio" name="format" value="json" autocomplete="off" checked>
+            <label class="btn btn-outline-primary" for="format-json">JSON</label>
+            <input class="btn-check" id="format-csv" type="radio" name="format" value="csv" autocomplete="off">
+            <label class="btn btn-outline-primary" for="format-csv">CSV</label>
+          </div>
+          {% for error in form.format.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        {% if current_user.is_super_admin %}
+        <div class="mt-3">
+          <label class="form-label" for="{{ form.institution_id.id }}">{{ form.institution_id.label.text }}</label>
+          {{ form.institution_id(class="form-select") }}
+          {% for error in form.institution_id.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if form.report_type.data == 'incident' or selected_type == 'incident' %}
+        <div class="mt-3">
+          <label class="form-label" for="{{ form.alert_id.id }}">{{ form.alert_id.label.text }}</label>
+          {{ form.alert_id(class="form-control", placeholder="Alert UUID") }}
+          <div class="form-text">{{ form.alert_id.description }}</div>
+          {% for error in form.alert_id.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <button class="btn btn-primary w-100 mt-4" type="submit"><i class="bi bi-file-earmark-arrow-down me-1"></i>Generate Report</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-info">
+    <div class="card-header fw-semibold"><i class="bi bi-info-circle me-2"></i>About This Report</div>
+    <div class="card-body">
+      <p class="text-muted">{{ selected_metadata.description }}</p>
+      <div class="d-flex flex-wrap gap-2">
+        {% for section in selected_metadata.sections %}
+        <span class="badge text-bg-light">{{ section }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% if task_id %}
+<script>
+(function(){
+  var taskId = "{{ task_id }}";
+  if (!taskId) return;
+  var statusUrlTemplate = "{{ url_for('admin.report_status', task_id='__TASK__') }}";
+  var downloadUrlTemplate = "{{ url_for('admin.reports_download', report_id='__TASK__') }}";
+
+  function check() {
+    var url = statusUrlTemplate.replace('__TASK__', taskId);
+    fetch(url, {credentials: 'same-origin'}).then(function(res){
+      if (!res.ok) throw new Error('status');
+      return res.json();
+    }).then(function(data){
+      if (!data) return setTimeout(check, 2000);
+      var status = data.status;
+      var hasContent = !!data.has_content;
+      if (status === 'completed' || hasContent) {
+        var downloadUrl = downloadUrlTemplate.replace('__TASK__', taskId);
+        var container = document.getElementById('ts-report-status-card');
+        if (container) {
+          container.innerHTML = '' +
+            '<div class="card border-success mb-4">' +
+              '<div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">' +
+                '<div>' +
+                  '<div class="fw-semibold text-success">Report Generated Successfully</div>' +
+                  '<div class="small text-muted">{{ selected_metadata.name|e }} is ready to download.</div>' +
+                '</div>' +
+                '<a class="btn btn-success" href="' + downloadUrl + '"><i class="bi bi-download me-1"></i>Download</a>' +
+              '</div>' +
+            '</div>';
+        }
+        // start download automatically
+        try { window.location = downloadUrl; } catch (e) {}
+      } else {
+        setTimeout(check, 2000);
+      }
+    }).catch(function(){ setTimeout(check, 5000); });
+  }
+
+  // Only start polling if report is not already completed
+  {% if not last_report or last_report.get('status') != 'completed' %}
+  setTimeout(check, 1500);
+  {% endif %}
+})();
+</script>
+{% endif %}
+{% endblock %}

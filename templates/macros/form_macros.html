@@ -1,0 +1,76 @@
+{% macro render_field(field, class='', label_class='', wrapper_class='', placeholder='', extra_attrs='') %}
+<div class="mb-3 {{ wrapper_class }}">
+  <label for="{{ field.id }}" class="form-label {{ label_class }}">
+    {{ field.label.text }}{% if field.flags.required %}<span class="text-danger ms-1">*</span>{% endif %}
+  </label>
+  {{ field(class="form-control " ~ ("is-invalid " if field.errors else "") ~ class, placeholder=placeholder) }}
+  {% if field.errors %}
+  {% for error in field.errors %}
+  <div class="invalid-feedback d-block">{{ error }}</div>
+  {% endfor %}
+  {% endif %}
+  {% if field.description %}
+  <div class="form-text text-muted">{{ field.description }}</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_checkbox(field, label_text='', class='') %}
+<div class="form-check mb-3">
+  {{ field(class="form-check-input " ~ class) }}
+  <label class="form-check-label" for="{{ field.id }}">{{ label_text or field.label.text }}</label>
+  {% if field.errors %}
+  {% for error in field.errors %}
+  <div class="invalid-feedback d-block">{{ error }}</div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_select(field, class='', wrapper_class='') %}
+<div class="mb-3 {{ wrapper_class }}">
+  <label for="{{ field.id }}" class="form-label">{{ field.label.text }}{% if field.flags.required %}<span class="text-danger ms-1">*</span>{% endif %}</label>
+  {{ field(class="form-select " ~ ("is-invalid " if field.errors else "") ~ class) }}
+  {% if field.errors %}
+  {% for error in field.errors %}
+  <div class="invalid-feedback d-block">{{ error }}</div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_submit(text='Submit', class='btn btn-primary', icon='') %}
+<button type="submit" class="{{ class }}">
+  {% if icon %}<i class="bi {{ icon }} me-2"></i>{% endif %}{{ text }}
+</button>
+{% endmacro %}
+
+{% macro render_errors(form) %}
+{% set messages = [] %}
+{% for field_name, errors in form.errors.items() %}
+{% if not form[field_name] is defined %}
+{% for error in errors %}
+{% set _ = messages.append(error) %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% if messages %}
+<div class="alert alert-danger" role="alert">
+  <ul class="mb-0">
+    {% for message in messages %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_form_card(title, form_content, footer_content='', card_class='') %}
+<div class="card {{ card_class }}">
+  <div class="card-header fw-semibold">{{ title }}</div>
+  <div class="card-body">{{ form_content }}</div>
+  {% if footer_content %}
+  <div class="card-footer">{{ footer_content }}</div>
+  {% endif %}
+</div>
+{% endmacro %}

@@ -1,0 +1,57 @@
+<header class="ts-admin-topbar">
+  <div class="d-flex align-items-center gap-2">
+    <button class="btn btn-link ts-sidebar-toggle d-lg-none p-0 text-dark" type="button" aria-label="Open sidebar">
+      <i class="bi bi-list fs-3"></i>
+    </button>
+    <h1 class="h5 mb-0 d-none d-sm-block">{{ page_title }}</h1>
+  </div>
+
+  <div class="d-flex align-items-center gap-2 ms-auto">
+    {% if current_user.is_authenticated and current_user.is_super_admin %}
+    {% set current_filter = session.get('admin_institution_filter', 'all') %}
+    <select class="form-select form-select-sm d-none d-md-block" aria-label="Institution selector" data-institution-selector data-filter-url="{{ url_for('admin.set_institution_filter') }}">
+      <option value="all" {% if current_filter == 'all' %}selected{% endif %}>All Institutions</option>
+      {% for institution in all_institutions %}
+      <option value="{{ institution.id }}" {% if current_filter == institution.id %}selected{% endif %}>{{ institution.name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+
+    <div class="dropdown">
+      <button class="btn btn-link position-relative text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open alerts">
+        <i class="bi bi-bell fs-5"></i>
+        {% if open_alerts_count > 0 %}
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ open_alerts_count }}</span>
+        {% endif %}
+      </button>
+      <div class="dropdown-menu dropdown-menu-end p-0" style="width: min(22rem, 90vw);">
+        <div class="px-3 py-2 border-bottom fw-semibold">Open Alerts</div>
+        {% if recent_open_alerts %}
+        {% for alert in recent_open_alerts %}
+        <a class="dropdown-item py-2" href="{{ url_for('admin.alert_detail', alert_id=alert.id) }}">
+          <div class="small fw-semibold text-truncate">{{ alert.title }}</div>
+          <div class="small text-muted">{{ alert.severity|title }} risk</div>
+        </a>
+        {% endfor %}
+        {% else %}
+        <div class="px-3 py-3 text-muted small">No open alerts.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <div class="dropdown">
+      <button class="btn btn-light btn-sm d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <span class="d-none d-md-inline">{{ current_user.email[:3] }}***</span>
+        <span class="badge bg-{{ current_user.get_role_badge_color() }}">{{ current_user.get_role_display() }}</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">Profile Settings</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">Change Password</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</header>

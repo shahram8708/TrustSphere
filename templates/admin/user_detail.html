@@ -1,0 +1,253 @@
+{% extends "base_admin.html" %}
+{% from "partials/_risk_badge.html" import risk_badge %}
+
+{% block title %}User Risk Profile{% endblock %}
+{% block page_title %}User Risk Profile{% endblock %}
+
+{% macro user_action_modal(action, title, label, button_class) %}
+<div class="modal fade" id="{{ action }}Modal" tabindex="-1" aria-labelledby="{{ action }}ModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('admin.user_action', user_id=user.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="{{ action }}">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="{{ action }}ModalLabel">{{ title }}</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label" for="{{ action }}Reason">Reason</label>
+          <textarea class="form-control" id="{{ action }}Reason" name="reason" rows="4" placeholder="Provide a reason for the audit log."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn {{ button_class }}">{{ label }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% block admin_content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.users') }}">Users</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ user.get_masked_id() }}</li>
+  </ol>
+</nav>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-4">
+      <div class="d-flex flex-wrap align-items-center gap-4">
+        <div class="ts-profile-icon">
+          <i class="bi {% if user.user_type == 'employee' %}bi-person-badge{% else %}bi-person-circle{% endif %}"></i>
+        </div>
+        <div>
+          <div class="ts-masked-id fs-5 mb-2">{{ user.get_masked_id() }}</div>
+          <div class="small text-muted">External ID {{ (user.external_user_id[:10] ~ "...") if user.external_user_id else "Protected" }}</div>
+          <div class="small text-muted">{{ user.institution.name if user.institution else "Institution unavailable" }}</div>
+          <div class="small text-muted">Created {% if user.created_at %}<span data-timestamp="{{ user.created_at.isoformat() }}">{{ user.created_at.strftime("%Y-%m-%d") }}</span>{% endif %} and {{ account_tenure_days }} days old</div>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <span class="badge text-bg-light">{{ user.user_type|title }}</span>
+            {% if user.is_suspended %}<span class="badge text-bg-danger">Suspended</span>{% else %}<span class="badge text-bg-success">Active</span>{% endif %}
+            <span class="badge bg-{{ user.get_risk_color() }}">{{ user.get_risk_category() }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="text-center">
+        <div class="small text-muted mb-2">Current Risk</div>
+        <div class="ts-user-gauge">
+          <canvas id="ts-user-gauge" data-risk-score="{{ user.risk_score_current }}" width="120" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="ts-action-btn-group mt-4">
+      {% if user.is_suspended %}
+      <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#unsuspendModal"><i class="bi bi-unlock me-1"></i>Unsuspend</button>
+      {% else %}
+      <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#suspendModal"><i class="bi bi-lock me-1"></i>Suspend</button>
+      {% endif %}
+      <button class="btn btn-outline-warning" type="button" data-bs-toggle="modal" data-bs-target="#force_stepupModal"><i class="bi bi-shield-exclamation me-1"></i>Force Step Up</button>
+      <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#reset_behavioural_profileModal"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset Behavioural Profile</button>
+      <button class="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#flag_high_riskModal"><i class="bi bi-flag me-1"></i>Flag High Risk</button>
+      <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#clear_risk_scoreModal"><i class="bi bi-check-circle me-1"></i>Clear Risk Score</button>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-graph-up me-2"></i>Risk Score History</div>
+      <div class="card-body">
+        <div class="ts-chart-wide">
+          <canvas id="ts-risk-history" data-risk-history='{{ risk_history_json|e }}' height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between gap-3">
+        <div class="fw-semibold"><i class="bi bi-activity me-2"></i>Recent Sessions</div>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.sessions', user_id=user.id) }}">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Channel</th>
+              <th scope="col">Started At</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Peak Risk</th>
+              <th scope="col">Step Up</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in sessions %}
+            <tr>
+              <td><i class="bi {{ item.get_channel_icon() }} me-1"></i>{{ channel_label(item.channel) }}</td>
+              <td>{% if item.started_at %}<span data-timestamp="{{ item.started_at.isoformat() }}">{{ item.started_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}</td>
+              <td>{% if item.is_active %}<span class="badge text-bg-success">Active</span>{% else %}{{ item.duration_minutes }} min{% endif %}</td>
+              <td>{{ risk_badge(item.risk_score_peak, show_label=False) }}</td>
+              <td>
+                {% if item.stepup_triggered %}
+                <span class="badge bg-{{ stepup_color(item.stepup_outcome) }}">{{ item.stepup_outcome|replace("_", " ")|title }}</span>
+                {% else %}
+                <span class="text-muted">None</span>
+                {% endif %}
+              </td>
+              <td>{% if item.is_flagged %}<span class="badge text-bg-danger">Flagged</span>{% else %}<span class="badge text-bg-light">Normal</span>{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6"><div class="ts-empty-state py-4"><i class="bi bi-activity"></i><span>No sessions found.</span></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-phone me-2"></i>Registered Devices</div>
+      <div class="list-group list-group-flush">
+        {% for device in devices %}
+        <div class="list-group-item">
+          <div class="d-flex align-items-start gap-3">
+            <i class="bi {{ device.get_device_icon() }} fs-4 text-primary"></i>
+            <div class="flex-grow-1">
+              <div class="fw-semibold">{{ device.device_name }}</div>
+              <div class="small text-muted">{{ device.os_family or "Unknown OS" }} {{ device.browser_family or "" }}</div>
+              {% if device.last_seen_at %}
+              <div class="small text-muted" data-timestamp="{{ device.last_seen_at.isoformat() }}">{{ device.last_seen_at.strftime("%Y-%m-%d %H:%M") }}</div>
+              {% endif %}
+            </div>
+            <span class="badge bg-{{ device.get_trust_badge_color() }}">{{ device.trust_level|title }}</span>
+          </div>
+        </div>
+        {% else %}
+        <div class="list-group-item text-muted small">No active devices.</div>
+        {% endfor %}
+      </div>
+      <div class="card-footer small text-muted">Ask the user to remove a device from their portal if needed.</div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between gap-3">
+        <div class="fw-semibold"><i class="bi bi-exclamation-triangle me-2"></i>Alert History</div>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.alerts', status='all', user_id=user.id) }}">View All Alerts</a>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for alert in alerts %}
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.alert_detail', alert_id=alert.id) }}">
+          <div class="d-flex justify-content-between gap-3">
+            <div>
+              <span class="badge bg-{{ alert.get_severity_badge_color() }}">{{ alert.severity|title }}</span>
+              <span class="fw-semibold ms-1">{{ alert.title[:50] }}</span>
+            </div>
+            <span class="badge bg-{{ alert.get_status_badge_color() }}">{{ alert.status|replace("_", " ")|title }}</span>
+          </div>
+          {% if alert.created_at %}
+          <div class="small text-muted mt-1" data-timestamp="{{ alert.created_at.isoformat() }}">{{ alert.created_at.strftime("%Y-%m-%d %H:%M") }}</div>
+          {% endif %}
+        </a>
+        {% else %}
+        <div class="list-group-item text-muted small">No alert history.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-fingerprint me-2"></i>Behavioural Profile</div>
+      <div class="card-body">
+        {% if behavioural_summary.has_profile %}
+        {% set training = behavioural_summary.training_sessions or 0 %}
+        {% set confidence_pct = [((training / 30) * 100)|round(0, "floor"), 100] | min %}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <span class="badge text-bg-info">{{ behavioural_summary.confidence_level|title }} Confidence</span>
+          <span class="badge text-bg-light">Version {{ behavioural_summary.profile_version }}</span>
+        </div>
+        <div class="small text-muted mb-2">{{ training }} verified sessions</div>
+        <div class="progress mb-2" role="progressbar" aria-valuenow="{{ confidence_pct|int }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar bg-info" style="width: {{ confidence_pct|int }}%"></div>
+        </div>
+        {% if behavioural_summary.updated_at %}
+        <div class="small text-muted">Updated <span data-timestamp="{{ behavioural_summary.updated_at.isoformat() }}">{{ behavioural_summary.updated_at.strftime("%Y-%m-%d %H:%M") }}</span></div>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info mb-0">No behavioural profile established yet. Profile builds automatically after verified sessions.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if privileged_sessions is not none %}
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-shield-lock me-2"></i>Recent Privileged Access</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">System</th>
+              <th scope="col">Level</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Risk</th>
+              <th scope="col">Alert</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in privileged_sessions %}
+            <tr>
+              <td>{{ item.system_accessed or "Unknown" }}</td>
+              <td>{{ item.privilege_level|title }}</td>
+              <td>{{ item.duration_hours }} hr</td>
+              <td>{{ risk_badge(item.risk_score, show_label=False) }}</td>
+              <td>{% if item.alert_generated %}<i class="bi bi-flag-fill text-danger"></i>{% else %}<span class="text-muted">None</span>{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted small">No privileged sessions found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if not user.is_suspended %}{{ user_action_modal("suspend", "Suspend User", "Suspend", "btn-danger") }}{% endif %}
+{% if user.is_suspended %}{{ user_action_modal("unsuspend", "Unsuspend User", "Unsuspend", "btn-success") }}{% endif %}
+{{ user_action_modal("force_stepup", "Force Step Up", "Confirm", "btn-warning") }}
+{{ user_action_modal("reset_behavioural_profile", "Reset Behavioural Profile", "Reset Profile", "btn-secondary") }}
+{{ user_action_modal("flag_high_risk", "Flag High Risk", "Flag User", "btn-danger") }}
+{{ user_action_modal("clear_risk_score", "Clear Risk Score", "Clear", "btn-success") }}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/risk-gauge.js') }}"></script>
+{% endblock %}

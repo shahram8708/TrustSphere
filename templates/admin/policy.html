@@ -1,0 +1,236 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Risk Policy{% endblock %}
+{% block page_title %}Risk Policy Configuration{% endblock %}
+
+{% block admin_content %}
+<form id="ts-policy-form" method="post" action="{{ url_for('admin.policy') }}" data-stepup-rules='{{ stepup_rules_json_init }}' data-alert-distribution='{{ alert_distribution_json }}' data-test-rule-url='{{ url_for("admin.policy_test_rule") }}'>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" id="threshold_low" name="threshold_low" value="{{ form.threshold_low.data or 30 }}">
+  <input type="hidden" id="threshold_medium" name="threshold_medium" value="{{ form.threshold_medium.data or 60 }}">
+  <input type="hidden" id="threshold_high" name="threshold_high" value="{{ form.threshold_high.data or 80 }}">
+  <input type="hidden" id="stepup_rules_json" name="stepup_rules_json" value="{{ form.stepup_rules_json.data or '[]' }}">
+  <input type="hidden" id="channel_policies_json" name="channel_policies_json" value="{{ form.channel_policies_json.data or '{}' }}">
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-lg-6">
+          <label class="form-label" for="policy_name">{{ form.policy_name.label.text }}</label>
+          {{ form.policy_name(class="form-control") }}
+          {% for error in form.policy_name.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="col-lg-6 text-lg-end">
+          {% if active_policy %}
+          <span class="badge text-bg-success">Active since {% if active_policy.activated_at %}{{ active_policy.activated_at.strftime("%Y-%m-%d") }}{% else %}recently{% endif %}</span>
+          {% else %}
+          <span class="badge text-bg-warning">Using default policy</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-3" id="ts-policy-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="thresholds-tab" data-bs-toggle="tab" data-bs-target="#thresholds-pane" type="button" role="tab" aria-controls="thresholds-pane" aria-selected="true"><i class="bi bi-sliders me-1"></i>Thresholds</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules-pane" type="button" role="tab" aria-controls="rules-pane" aria-selected="false"><i class="bi bi-diagram-3 me-1"></i>Step Up Rules</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="weights-tab" data-bs-toggle="tab" data-bs-target="#weights-pane" type="button" role="tab" aria-controls="weights-pane" aria-selected="false"><i class="bi bi-cpu me-1"></i>ML Weights</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channels-pane" type="button" role="tab" aria-controls="channels-pane" aria-selected="false"><i class="bi bi-grid-3x3-gap me-1"></i>Channels</button>
+    </li>
+  </ul>
+
+  <div class="tab-content mb-5">
+    <div class="tab-pane fade show active" id="thresholds-pane" role="tabpanel" aria-labelledby="thresholds-tab" tabindex="0">
+      <div class="row g-4">
+        <div class="col-xl-7">
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Global Risk Thresholds</div>
+            <div class="card-body">
+              {% for key, label, value_id, slider_id in [
+                ("low", "Low Risk Threshold", "ts-val-low", "ts-slider-low"),
+                ("medium", "Medium Risk Threshold", "ts-val-medium", "ts-slider-medium"),
+                ("high", "High Risk Threshold", "ts-val-high", "ts-slider-high")
+              ] %}
+              {% set current_value = form.threshold_low.data if key == "low" else form.threshold_medium.data if key == "medium" else form.threshold_high.data %}
+              <div class="mb-4">
+                <div class="d-flex justify-content-between mb-2">
+                  <label class="form-label fw-semibold mb-0" for="{{ slider_id }}">{{ label }}</label>
+                  <span class="badge text-bg-light" id="{{ value_id }}">{{ current_value }}</span>
+                </div>
+                <input class="form-range ts-threshold-slider" id="{{ slider_id }}" type="range" min="{{ 5 if key == 'low' else 10 if key == 'medium' else 15 }}" max="{{ 50 if key == 'low' else 95 if key == 'medium' else 99 }}" step="1" value="{{ current_value }}" data-target="{{ key }}">
+              </div>
+              {% endfor %}
+              <button class="btn btn-outline-secondary" id="ts-reset-thresholds" type="button"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset to 30/60/80</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-5">
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Risk Distribution Preview</div>
+            <div class="card-body">
+              {% for key, label, color in [("low", "Low", "success"), ("medium", "Medium", "warning"), ("high", "High", "danger"), ("critical", "Critical", "dark")] %}
+              <div class="mb-3">
+                <div class="d-flex justify-content-between small mb-1">
+                  <span>{{ label }}</span>
+                  <span id="ts-preview-{{ key }}-label">0</span>
+                </div>
+                <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                  <div id="ts-preview-{{ key }}" class="progress-bar bg-{{ color }}" style="width: 0%">0%</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="rules-pane" role="tabpanel" aria-labelledby="rules-tab" tabindex="0">
+      <div class="card">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div>
+            <div class="fw-semibold">Dynamic Step Up Rules</div>
+            <div class="small text-muted">Rules are evaluated by risk range and access channel.</div>
+          </div>
+          <button class="btn btn-sm btn-primary" id="ts-add-rule-btn" type="button"><i class="bi bi-plus-lg me-1"></i>Add Rule</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 ts-admin-table" id="ts-rules-table">
+            <thead>
+              <tr>
+                <th scope="col">Risk Min</th>
+                <th scope="col">Risk Max</th>
+                <th scope="col">Channel</th>
+                <th scope="col">Verification</th>
+                <th scope="col">Timeout</th>
+                <th scope="col">Remove</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <button class="btn btn-outline-primary" id="ts-test-rule-btn" data-test-url="{{ url_for('admin.policy_test_rule') }}" type="button"><i class="bi bi-flask me-1"></i>Test Selected Rule</button>
+          <div id="ts-test-result" class="flex-grow-1 d-none"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="weights-pane" role="tabpanel" aria-labelledby="weights-tab" tabindex="0">
+      <div class="card">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div>
+            <div class="fw-semibold">Signal Weight Configuration</div>
+            <div class="small text-muted">The total should stay close to 1.0.</div>
+          </div>
+          <span class="badge text-bg-light">Total <span id="ts-weight-sum">1.00</span></span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% for field in [form.ml_weight_device, form.ml_weight_behavioural, form.ml_weight_geographic, form.ml_weight_network, form.ml_weight_transaction, form.ml_weight_time] %}
+            <div class="col-md-6 col-xl-4">
+              <label class="form-label" for="{{ field.id }}">{{ field.label.text }}</label>
+              {{ field(class="form-control ts-weight-input", step="0.01", min="0", max="1") }}
+              {% for error in field.errors %}
+              <div class="invalid-feedback d-block">{{ error }}</div>
+              {% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+          <button class="btn btn-outline-secondary mt-3" id="ts-restore-weights" type="button"><i class="bi bi-arrow-counterclockwise me-1"></i>Restore Default Weights</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="channels-pane" role="tabpanel" aria-labelledby="channels-tab" tabindex="0">
+      <div class="mb-3">
+        <h2 class="h5 mb-1">Per Channel Policy Overrides</h2>
+        <div class="text-muted">Configure different behaviour for each access channel.</div>
+      </div>
+      <div class="row g-4">
+        {% for channel, label, icon in [
+          ("mobile_app", "Mobile App", "bi-phone"),
+          ("web_browser", "Web Browser", "bi-globe2"),
+          ("api", "API", "bi-code-slash"),
+          ("atm", "ATM", "bi-bank")
+        ] %}
+        {% set policy = channel_policies.get(channel, {}) %}
+        <div class="col-md-6">
+          <div class="card h-100 ts-channel-card" data-channel="{{ channel }}">
+            <div class="card-header fw-semibold"><i class="bi {{ icon }} me-2"></i>{{ label }}</div>
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input ts-channel-enabled" id="channel-{{ channel }}" type="checkbox" {% if policy.get("enabled") %}checked{% endif %}>
+                <label class="form-check-label" for="channel-{{ channel }}">Override global policy for this channel</label>
+              </div>
+              <div class="ts-channel-settings {% if not policy.get("enabled") %}d-none{% endif %}">
+                <div class="mb-3">
+                  <label class="form-label" for="channel-{{ channel }}-multiplier">Risk score multiplier</label>
+                  <input class="form-control ts-channel-multiplier" id="channel-{{ channel }}-multiplier" type="number" min="0.5" max="2" step="0.05" value="{{ policy.get('risk_multiplier', 1.0) }}">
+                </div>
+                <div>
+                  <label class="form-label" for="channel-{{ channel }}-threshold">Step up threshold</label>
+                  <input class="form-control ts-channel-threshold" id="channel-{{ channel }}-threshold" type="number" min="0" max="100" value="{{ policy.get('stepup_threshold', 60) }}">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="ts-save-bar sticky-bottom bg-white border-top py-3 px-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <span class="text-muted small">Unsaved changes will be lost if you navigate away.</span>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.policy') }}">Discard Changes</a>
+        <button class="btn btn-warning" type="submit"><i class="bi bi-check2-circle me-1"></i>Save and Activate Policy</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if policy_history %}
+<div class="card mt-4">
+  <div class="card-header fw-semibold">Recent Policy Versions</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead>
+        <tr>
+          <th scope="col">Policy</th>
+          <th scope="col">Thresholds</th>
+          <th scope="col">Created</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in policy_history %}
+        <tr>
+          <td>{{ item.policy_name }}</td>
+          <td>{{ item.threshold_low }} / {{ item.threshold_medium }} / {{ item.threshold_high }}</td>
+          <td>{% if item.created_at %}<span data-timestamp="{{ item.created_at.isoformat() }}">{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}</td>
+          <td>{% if item.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-light">Inactive</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/policy-builder.js') }}"></script>
+{% endblock %}

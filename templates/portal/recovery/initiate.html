@@ -1,0 +1,50 @@
+{% extends "base_portal.html" %}
+{% from "macros/form_macros.html" import render_select %}
+
+{% block title %}Account Recovery{% endblock %}
+
+{% block portal_content %}
+<div class="ts-recovery-shell">
+  <a class="d-inline-flex align-items-center gap-1 mb-3" href="{{ url_for('auth.login') }}">
+    <i class="bi bi-arrow-left"></i>Back to Login
+  </a>
+
+  <section class="ts-recovery-card">
+    <div class="text-center mb-3">
+      <i class="bi bi-key-fill text-secondary" style="font-size: 48px;"></i>
+      <h4 class="mt-2">Account Recovery</h4>
+      <p class="text-muted mb-0">To recover your account, we need to verify your identity. Your request will be evaluated and the appropriate verification method will be selected based on your account security profile.</p>
+    </div>
+
+    <div class="alert alert-info d-flex align-items-start gap-2">
+      <i class="bi bi-info-circle"></i>
+      <span>For your security, this process is monitored. Unusual recovery attempts may trigger additional verification or account protection measures.</span>
+    </div>
+
+    <form method="post" action="{{ url_for('portal.recovery_initiate') }}">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.account_identifier.id }}">{{ form.account_identifier.label.text }}</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          {{ form.account_identifier(class="form-control", placeholder="user1@horizonbank.in or HB-CUST-10001") }}
+        </div>
+        {% if form.account_identifier.errors %}
+        {% for error in form.account_identifier.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+        {% endif %}
+        <div class="form-text">{{ form.account_identifier.description }}</div>
+      </div>
+      {{ render_select(form.recovery_reason) }}
+      <button class="btn btn-secondary w-100" type="submit">
+        <i class="bi bi-shield-lock me-1"></i>{{ form.submit.label.text }}
+      </button>
+    </form>
+
+    <div class="text-center small text-muted mt-3">
+      Need help? <a href="{{ url_for('public.contact') }}">Contact your bank</a> for in person verification support.
+    </div>
+  </section>
+</div>
+{% endblock %}

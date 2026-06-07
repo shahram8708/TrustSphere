@@ -1,0 +1,164 @@
+{% extends "base_admin.html" %}
+{% from "partials/_risk_badge.html" import risk_badge %}
+
+{% block title %}Session Monitor{% endblock %}
+{% block page_title %}Session Monitor{% endblock %}
+
+{% block admin_content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="ts-stat-card h-100">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <span class="ts-stat-number">{{ active_sessions_count }}</span>
+          <span class="ts-stat-label">Active Sessions Now</span>
+        </div>
+        <span class="ts-live-dot"></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ high_risk_count }}</span>
+      <span class="ts-stat-label">High Risk Today</span>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ flagged_sessions_count }}</span>
+      <span class="ts-stat-label">Flagged Sessions</span>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" action="{{ url_for('admin.sessions') }}">
+      {% if user_filter %}<input type="hidden" name="user_id" value="{{ user_filter }}">{% endif %}
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold" for="channel">{{ filter_form.channel.label.text }}</label>
+          {{ filter_form.channel(class="form-select", id="channel") }}
+        </div>
+        <div class="col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold">Risk Range</label>
+          <div class="input-group">
+            <input class="form-control" type="number" min="0" max="100" name="risk_min" value="{{ risk_min }}">
+            <span class="input-group-text">to</span>
+            <input class="form-control" type="number" min="0" max="100" name="risk_max" value="{{ risk_max }}">
+          </div>
+        </div>
+        <div class="col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold" for="is_flagged">{{ filter_form.is_flagged.label.text }}</label>
+          {{ filter_form.is_flagged(class="form-select", id="is_flagged") }}
+        </div>
+        <div class="col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold" for="is_active">{{ filter_form.is_active.label.text }}</label>
+          {{ filter_form.is_active(class="form-select", id="is_active") }}
+        </div>
+        <div class="col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold" for="date_from">From</label>
+          <input class="form-control" id="date_from" type="date" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold" for="date_to">To</label>
+          <input class="form-control" id="date_to" type="date" name="date_to" value="{{ date_to }}">
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" type="submit">Apply</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('admin.sessions') }}">Clear</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="fw-semibold"><i class="bi bi-activity me-2"></i>Sessions</div>
+    <div class="small text-muted">Sorted by {{ sort_by|replace("_", " ")|title }} {{ sort_dir|upper }}</div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 ts-admin-table">
+      <thead>
+        <tr>
+          <th scope="col">Session ID</th>
+          <th scope="col">User</th>
+          <th scope="col">Device</th>
+          <th scope="col">Channel</th>
+          <th scope="col">Location</th>
+          <th scope="col">Risk</th>
+          <th scope="col">Step Up</th>
+          <th scope="col">Started</th>
+          <th scope="col">Duration</th>
+          <th scope="col">Flags</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in session_rows %}
+        {% set item = row.record %}
+        <tr data-active="{{ 'true' if item.is_active else 'false' }}" class="{% if item.risk_score_peak > 80 %}table-danger bg-opacity-25{% elif item.risk_score_peak > 60 %}table-warning bg-opacity-25{% endif %}">
+          <td>
+            <span class="ts-masked-id">{{ item.id[:8] }}</span>
+            {% if item.is_active %}<span class="badge bg-success ms-1">LIVE</span>{% endif %}
+          </td>
+          <td>{% if item.user %}<span class="ts-masked-id">{{ item.user.get_masked_id() }}</span>{% else %}<span class="text-muted">Protected</span>{% endif %}</td>
+          <td>{% if item.device %}{{ item.device.device_name }}{% else %}<span class="text-muted">Unknown</span>{% endif %}</td>
+          <td><span class="badge text-bg-light"><i class="bi {{ item.get_channel_icon() }} me-1"></i>{{ channel_label(item.channel) }}</span></td>
+          <td><span title="{{ mask_ip(item.ip_address) }}">{{ row.flag_emoji }} {{ row.location }}</span></td>
+          <td>
+            <div class="d-flex flex-wrap gap-1">
+              <span class="badge text-bg-secondary" data-bs-toggle="tooltip" title="Initial risk">I:{{ item.risk_score_initial }}</span>
+              <span class="badge bg-{{ risk_color(item.risk_score_peak) }}" data-bs-toggle="tooltip" title="Peak risk">P:{{ item.risk_score_peak }}</span>
+              <span class="badge bg-{{ risk_color(item.risk_score_final) }}" data-bs-toggle="tooltip" title="Final risk">F:{{ item.risk_score_final }}</span>
+            </div>
+          </td>
+          <td>
+            {% if item.stepup_triggered %}
+            <span class="badge bg-{{ stepup_color(item.stepup_outcome) }}">{{ item.stepup_outcome|replace("_", " ")|title }}</span>
+            {% else %}
+            <span class="text-muted">None</span>
+            {% endif %}
+          </td>
+          <td>{% if item.started_at %}<span data-timestamp="{{ item.started_at.isoformat() }}">{{ item.started_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}</td>
+          <td>{% if item.is_active %}<span class="text-success">Active</span>{% else %}{{ item.duration_minutes }} min{% endif %}</td>
+          <td>{% if item.is_flagged %}<i class="bi bi-flag-fill text-danger"></i>{% endif %}</td>
+          <td>
+            <div class="d-flex flex-wrap gap-2">
+              {% if row.open_alert %}
+              <a class="btn btn-sm btn-primary" href="{{ url_for('admin.alert_detail', alert_id=row.open_alert.id) }}">Investigate</a>
+              {% endif %}
+              <form method="post" action="{{ url_for('admin.session_flag', session_id=item.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm {% if item.is_flagged %}btn-outline-secondary{% else %}btn-outline-danger{% endif %}" type="submit">{% if item.is_flagged %}Unflag{% else %}Flag{% endif %}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="11">
+            <div class="ts-empty-state"><i class="bi bi-activity"></i><span>No sessions match these filters.</span></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    {% include "partials/_pagination.html" %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  window.setTimeout(function () {
+    if (document.querySelector('[data-active="true"]')) {
+      window.location.reload();
+    }
+  }, 30000);
+</script>
+{% endblock %}

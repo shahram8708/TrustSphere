@@ -1,0 +1,138 @@
+{% extends "base_admin.html" %}
+
+{% block title %}KYC Onboarding{% endblock %}
+{% block page_title %}KYC Onboarding Review{% endblock %}
+
+{% block admin_content %}
+<div class="row g-3 mb-4">
+  {% for key, label, icon, color in [
+    ("total", "Total Applications", "bi-person-vcard", "secondary"),
+    ("pending", "Pending", "bi-hourglass-split", "warning"),
+    ("manual_review", "Manual Review", "bi-person-check", "info"),
+    ("approve", "Approved", "bi-check-circle", "success"),
+    ("reject", "Rejected", "bi-x-octagon", "danger")
+  ] %}
+  <div class="col-6 col-xl">
+    <a class="ts-kpi-card d-block h-100 text-decoration-none {% if selected_decision == key %}ts-border-{{ color }}{% endif %}" href="{{ url_for('admin.onboarding', decision=key if key != 'total' else 'all') }}">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fs-3 fw-bold text-dark">{{ status_counts.get(key, 0) }}</div>
+          <div class="text-muted small">{{ label }}</div>
+        </div>
+        <i class="bi {{ icon }} fs-3 text-{{ color }}"></i>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+  <ul class="nav nav-pills gap-2">
+    {% for key, label in [("all", "All"), ("pending", "Pending"), ("manual_review", "Manual Review"), ("approve", "Approved"), ("reject", "Rejected")] %}
+    <li class="nav-item">
+      <a class="nav-link {% if selected_decision == key %}active{% endif %}" href="{{ url_for('admin.onboarding', decision=key) }}">{{ label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if avg_risk_score is not none %}
+  <span class="badge text-bg-light">Average risk {{ "%.1f"|format(avg_risk_score) }}</span>
+  {% endif %}
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" action="{{ url_for('admin.onboarding') }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold" for="decision">Decision</label>
+          <select class="form-select" id="decision" name="decision">
+            {% for key, label in [("all", "All"), ("pending", "Pending"), ("manual_review", "Manual Review"), ("approve", "Approved"), ("reject", "Rejected")] %}
+            <option value="{{ key }}" {% if selected_decision == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Risk Range</label>
+          <div class="input-group">
+            <input class="form-control" type="number" min="0" max="100" name="risk_min" value="{{ risk_min }}">
+            <span class="input-group-text">to</span>
+            <input class="form-control" type="number" min="0" max="100" name="risk_max" value="{{ risk_max }}">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold" for="date_from">From</label>
+          <input class="form-control" id="date_from" type="date" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold" for="date_to">To</label>
+          <input class="form-control" id="date_to" type="date" name="date_to" value="{{ date_to }}">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button class="btn btn-primary w-100" type="submit"><i class="bi bi-funnel me-1"></i>Apply</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('admin.onboarding') }}">Clear</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4">
+  {% for application in applications %}
+  {% set flags = application.get_risk_flags_list() %}
+  <div class="col-xl-6">
+    <div class="card h-100 {% if application.composite_risk_score > 80 %}border-danger{% elif application.composite_risk_score > 60 %}border-warning{% endif %}">
+      <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+          <div class="fw-semibold">{{ application.application_ref }}</div>
+          <div class="small text-muted">{{ application.applicant_name or "Protected applicant" }}</div>
+        </div>
+        <span class="badge bg-{{ application.get_decision_badge_color() }}">{{ application.decision|replace("_", " ")|title }}</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 align-items-center mb-3">
+          <div class="col-sm-4">
+            <div class="display-6 fw-bold text-{{ risk_color(application.composite_risk_score) }}">{{ application.composite_risk_score }}</div>
+            <div class="small text-muted">Composite risk</div>
+          </div>
+          <div class="col-sm-8">
+            <div class="progress mb-2" role="progressbar" aria-valuenow="{{ application.composite_risk_score }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar bg-{{ risk_color(application.composite_risk_score) }}" style="width: {{ application.composite_risk_score }}%"></div>
+            </div>
+            <div class="small text-muted">
+              Submitted {% if application.submitted_at %}<span data-timestamp="{{ application.submitted_at.isoformat() }}">{{ application.submitted_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <span class="badge {% if "Synthetic Identity Risk" in flags %}text-bg-danger{% else %}text-bg-light{% endif %}">Synthetic Identity</span>
+          <span class="badge {% if "Liveness Check Failed" in flags %}text-bg-danger{% else %}text-bg-light{% endif %}">Liveness</span>
+          <span class="badge {% if "Document Authenticity Risk" in flags %}text-bg-warning{% else %}text-bg-light{% endif %}">Document</span>
+          <span class="badge {% if "Bot Like Onboarding Behaviour" in flags %}text-bg-warning{% else %}text-bg-light{% endif %}">Behaviour</span>
+          <span class="badge {% if "Watchlist Match" in flags %}text-bg-danger{% else %}text-bg-light{% endif %}">Watchlist</span>
+        </div>
+        <div class="row g-2 small">
+          <div class="col-6">Document <span class="fw-semibold">{{ application.document_type|replace("_", " ")|title }}</span></div>
+          <div class="col-6">Liveness <span class="fw-semibold">{{ "%.0f"|format((application.liveness_score or 0) * 100) }}%</span></div>
+          <div class="col-6">Authenticity <span class="fw-semibold">{{ "%.0f"|format((application.document_authenticity_score or 0) * 100) }}%</span></div>
+          <div class="col-6">Behaviour <span class="fw-semibold">{{ "%.0f"|format((application.onboarding_behaviour_score or 0) * 100) }}%</span></div>
+        </div>
+      </div>
+      <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span class="small text-muted">
+          {% if application.reviewer %}Reviewed by {{ mask_email(application.reviewer.email) }}{% else %}Unassigned{% endif %}
+        </span>
+        <a class="btn btn-sm btn-primary" href="{{ url_for('admin.onboarding_detail', app_id=application.id) }}">Review</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="ts-empty-state"><i class="bi bi-person-vcard"></i><span>No onboarding applications match these filters.</span></div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="mt-4">
+  {% include "partials/_pagination.html" %}
+</div>
+{% endblock %}

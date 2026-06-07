@@ -1,0 +1,121 @@
+{% extends "base_portal.html" %}
+
+{% block title %}Security Alerts{% endblock %}
+
+{% block portal_content %}
+<div class="ts-portal-wrapper">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h3 class="mb-1">Security Alerts</h3>
+      <p class="text-muted mb-0">Review and resolve alerts connected to your account.</p>
+    </div>
+    <nav class="nav nav-pills gap-2" aria-label="Alert status filters">
+      <a href="{{ url_for('portal.alerts', status='all') }}" class="nav-link {% if selected_status == 'all' %}active{% endif %}">All ({{ alert_counts.total }})</a>
+      <a href="{{ url_for('portal.alerts', status='open') }}" class="nav-link {% if selected_status == 'open' %}active{% else %}text-danger{% endif %}">Open ({{ alert_counts.open }})</a>
+      <a href="{{ url_for('portal.alerts', status='resolved') }}" class="nav-link {% if selected_status == 'resolved' %}active{% else %}text-success{% endif %}">Resolved ({{ alert_counts.resolved }})</a>
+    </nav>
+  </div>
+
+  {% if alerts %}
+  <div class="d-grid gap-3">
+    {% for alert in alerts %}
+    {% set description = alert.description or '' %}
+    {% set collapse_id = 'alertDescription' ~ loop.index %}
+    <article class="ts-alert-card {{ alert.severity }}">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge text-bg-{{ alert.get_severity_badge_color() }}">{{ alert.severity | title }}</span>
+          <i class="bi {{ alert.get_severity_icon() }}"></i>
+          <span class="fw-semibold">{{ alert.get_alert_type_display() }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge text-bg-{{ alert.get_status_badge_color() }}">{{ alert.status | replace('_', ' ') | title }}</span>
+          <small class="text-muted" data-timestamp="{{ alert.created_at.isoformat() }}">{{ alert.created_at.strftime('%d %b %Y') }}</small>
+        </div>
+      </div>
+      <div>
+        <h4 class="h6">{{ alert.title }}</h4>
+        {% if description | length > 200 %}
+        <p class="mb-2">{{ description[:200] }}...</p>
+        <div class="collapse" id="{{ collapse_id }}">
+          <p class="mb-2">{{ description[200:] }}</p>
+        </div>
+        <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#{{ collapse_id }}" aria-expanded="false" aria-controls="{{ collapse_id }}">Read more</button>
+        {% else %}
+        <p class="mb-2">{{ description }}</p>
+        {% endif %}
+        {% if alert.auto_action_taken and alert.auto_action_taken != 'none' %}
+        <div class="alert alert-info py-2 mb-0">
+          <i class="bi bi-robot me-1"></i>Automatic action taken: {{ alert.auto_action_taken | replace('_', ' ') | title }}
+        </div>
+        {% endif %}
+      </div>
+      {% if alert.status == 'open' %}
+      <div class="border-top mt-3 pt-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+        <form method="post" action="{{ url_for('portal.alert_resolve', alert_id=alert.id) }}" class="w-100 w-md-auto">
+          {{ form.hidden_tag() }}
+          <button class="btn btn-secondary w-100 w-md-auto" type="submit">
+            <i class="bi bi-check-circle me-1"></i>Mark as Resolved
+          </button>
+        </form>
+        <small class="text-muted">Marking resolved confirms you are aware of this alert.</small>
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  <div class="mt-3">{% include "partials/_pagination.html" %}</div>
+  {% else %}
+  <div class="ts-empty-state bg-white border rounded">
+    <i class="bi bi-shield-check text-success"></i>
+    <h4>No Security Alerts</h4>
+    {% if selected_status == 'open' %}
+    <p>Your account has no open security alerts. Everything looks secure.</p>
+    {% elif selected_status == 'resolved' %}
+    <p>No resolved alerts found in your history.</p>
+    {% else %}
+    <p>You have no security alerts on record. TrustSphere is protecting your account silently.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <section class="accordion mt-4" id="securityEducation">
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#educationAto" aria-expanded="false" aria-controls="educationAto">
+          What is an Account Takeover Alert?
+        </button>
+      </h2>
+      <div id="educationAto" class="accordion-collapse collapse" data-bs-parent="#securityEducation">
+        <div class="accordion-body">
+          An account takeover alert means TrustSphere detected signals that may indicate someone else tried to access your account, such as a new device, unusual location, or abnormal behaviour pattern.
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#educationLogin" aria-expanded="false" aria-controls="educationLogin">
+          What should I do if I see a suspicious login?
+        </button>
+      </h2>
+      <div id="educationLogin" class="accordion-collapse collapse" data-bs-parent="#securityEducation">
+        <div class="accordion-body">
+          Change your banking password, remove suspicious devices from this portal, and contact your bank through an official support channel if the activity was not yours.
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#educationTrustSphere" aria-expanded="false" aria-controls="educationTrustSphere">
+          How does TrustSphere protect me?
+        </button>
+      </h2>
+      <div id="educationTrustSphere" class="accordion-collapse collapse" data-bs-parent="#securityEducation">
+        <div class="accordion-body">
+          TrustSphere continuously evaluates device trust, behaviour, network, location, and session activity so your bank can step up verification only when risk increases.
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

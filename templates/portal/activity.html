@@ -1,0 +1,188 @@
+{% extends "base_portal.html" %}
+
+{% block title %}Activity Log{% endblock %}
+
+{% block portal_content %}
+<div class="ts-portal-wrapper">
+  <div class="mb-4">
+    <h3 class="mb-1">Activity Log</h3>
+    <p class="text-muted mb-0">Your session and transaction history</p>
+  </div>
+
+  <form class="ts-filter-card bg-white border rounded p-3 mb-3" method="get" action="{{ url_for('portal.activity') }}">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label" for="date_from">Date From</label>
+        <input type="date" name="date_from" id="date_from" class="form-control" value="{{ date_from_str }}">
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label" for="date_to">Date To</label>
+        <input type="date" name="date_to" id="date_to" class="form-control" value="{{ date_to_str }}">
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label" for="channel">Channel</label>
+        <select name="channel" id="channel" class="form-select">
+          {% for value, label in channel_options %}
+          <option value="{{ value }}" {% if value == selected_channel %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-3 d-flex gap-2">
+        <button class="btn btn-secondary flex-fill" type="submit"><i class="bi bi-funnel me-1"></i>Apply Filter</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('portal.activity') }}">Clear</a>
+      </div>
+    </div>
+    {% if selected_channel %}
+    <div class="mt-3 d-flex flex-wrap gap-2">
+      <span class="badge text-bg-light border">Channel: {{ channel_label(selected_channel) }}</span>
+    </div>
+    {% endif %}
+  </form>
+
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+    <p class="small text-muted mb-0">
+      {% if pagination.total > 0 %}
+      Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }} to {{ [pagination.page * pagination.per_page, pagination.total] | min }} of {{ pagination.total }} sessions
+      {% else %}
+      Showing 0 sessions
+      {% endif %}
+      from {{ date_from_str }} to {{ date_to_str }}
+    </p>
+    <span class="badge text-bg-light border">{{ total_sessions_in_range }} in selected range</span>
+  </div>
+
+  {% if pagination.total > 0 %}
+  <div class="table-responsive bg-white border rounded">
+    <table class="table table-hover align-middle mb-0 ts-activity-table">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Date and Time</th>
+          <th scope="col">Channel</th>
+          <th scope="col">Location</th>
+          <th scope="col">Duration</th>
+          <th scope="col">Risk</th>
+          <th scope="col">Step Up</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="text-end">Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions %}
+        {% set collapse_id = 'sessionEvents' ~ loop.index %}
+        <tr>
+          <td>
+            <div class="fw-semibold" data-timestamp="{{ session.started_at.isoformat() }}">{{ session.started_at.strftime('%d %b %Y, %H:%M') }}</div>
+            <div class="small text-muted d-md-none">{{ session.started_at.strftime('%d %b') }}</div>
+          </td>
+          <td>
+            <span class="badge text-bg-light border">
+              <i class="bi {{ session.get_channel_icon() }} me-1"></i>{{ channel_label(session.channel) }}
+            </span>
+          </td>
+          <td>{{ session.ip_city or 'Unknown' }}, {{ session.ip_country or 'Unknown' }}</td>
+          <td>{{ session.duration_minutes }} min</td>
+          <td>
+            <span class="badge text-bg-{{ risk_color_for_score(session.risk_score_peak) }}">{{ session.risk_score_peak }} {{ risk_category_for_score(session.risk_score_peak) }}</span>
+          </td>
+          <td>
+            {% if session.stepup_triggered %}
+            <span class="badge text-bg-{{ stepup_outcome_color(session.stepup_outcome) }}">{{ session.stepup_outcome | title }}</span>
+            {% else %}
+            <span class="text-muted">None</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if session.is_active %}
+            <span class="badge text-bg-success ts-pulse">Active</span>
+            {% else %}
+            <span class="text-muted">Ended</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-secondary ts-expand-btn" type="button" data-bs-toggle="collapse" data-bs-target="#{{ collapse_id }}" aria-expanded="false" aria-controls="{{ collapse_id }}">
+              <i class="bi bi-chevron-down"></i>
+            </button>
+          </td>
+        </tr>
+        <tr class="collapse" id="{{ collapse_id }}">
+          <td colspan="8" class="bg-light">
+            {% set events = session_events_map.get(session.id, []) %}
+            {% if events %}
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Timestamp</th>
+                    <th scope="col">Event</th>
+                    <th scope="col">Risk Change</th>
+                    <th scope="col">Contributing Factors</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for event in events %}
+                  <tr>
+                    <td><span data-timestamp="{{ event.evaluated_at.isoformat() }}">{{ event.evaluated_at.strftime('%H:%M') }}</span></td>
+                    <td>{{ event_display(event.event_type) }}</td>
+                    <td>{{ event.risk_score_before }} to {{ event.risk_score_after }}</td>
+                    <td>
+                      {% set factors = event.get_contributing_factors_dict() %}
+                      {% if factors %}
+                      {% for key, value in factors.items() %}
+                      {% if loop.index <= 2 %}
+                      <span class="badge text-bg-light border">{{ key | replace('_', ' ') | title }} {{ value }}</span>
+                      {% endif %}
+                      {% endfor %}
+                      {% else %}
+                      <span class="text-muted">None recorded</span>
+                      {% endif %}
+                    </td>
+                    <td><span class="badge text-bg-{{ action_color(event.cre_response_action) }}">{{ event.cre_response_action | title }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No detailed events recorded for this session.</p>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-3">{% include "partials/_pagination.html" %}</div>
+  {% else %}
+  <div class="ts-empty-state bg-white border rounded">
+    <i class="bi bi-calendar-x"></i>
+    <h4>No sessions found</h4>
+    <p>No sessions match the selected filters.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".ts-expand-btn").forEach(function (button) {
+      var targetSelector = button.getAttribute("data-bs-target");
+      var target = document.querySelector(targetSelector);
+      var icon = button.querySelector(".bi");
+      if (!target || !icon) {
+        return;
+      }
+      target.addEventListener("show.bs.collapse", function () {
+        icon.classList.remove("bi-chevron-down");
+        icon.classList.add("bi-chevron-up");
+      });
+      target.addEventListener("hide.bs.collapse", function () {
+        icon.classList.remove("bi-chevron-up");
+        icon.classList.add("bi-chevron-down");
+      });
+    });
+  });
+</script>
+{% endblock %}

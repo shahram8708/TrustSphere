@@ -1,0 +1,149 @@
+.ts-portal-wrapper {
+  width: min(100%, 1200px);
+  margin-inline: auto;
+}
+
+.ts-portal-header {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  background: var(--ts-bg-white);
+  border-bottom: 1px solid var(--ts-border-color);
+  box-shadow: var(--ts-shadow-sm);
+}
+
+.ts-portal-main {
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.ts-trust-score-hero {
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  padding: 2.5rem 1rem;
+  background: var(--ts-bg-white);
+  border-radius: var(--ts-radius-md);
+  box-shadow: var(--ts-shadow-card);
+}
+
+.ts-trust-score-value {
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  line-height: 1;
+  font-weight: 700;
+  color: var(--ts-primary);
+}
+
+.ts-trust-status-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ts-trust-status-text.secure {
+  color: var(--ts-success);
+}
+
+.ts-trust-status-text.elevated {
+  color: var(--ts-warning);
+}
+
+.ts-trust-status-text.critical {
+  color: var(--ts-danger);
+}
+
+.ts-device-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--ts-bg-white);
+  border: 1px solid var(--ts-border-color);
+  border-radius: var(--ts-radius-md);
+  box-shadow: var(--ts-shadow-card);
+}
+
+.ts-device-card i {
+  font-size: 1.5rem;
+  color: var(--ts-secondary);
+}
+
+.ts-activity-table tbody tr:nth-child(odd) {
+  background: color-mix(in srgb, var(--ts-bg-light) 70%, var(--ts-bg-white));
+}
+
+.ts-alert-card {
+  padding: 1rem;
+  background: var(--ts-bg-white);
+  border: 1px solid var(--ts-border-color);
+  border-left: 4px solid var(--ts-info);
+  border-radius: var(--ts-radius-md);
+  box-shadow: var(--ts-shadow-card);
+}
+
+.ts-alert-card.low {
+  border-left-color: var(--ts-success);
+}
+
+.ts-alert-card.medium {
+  border-left-color: var(--ts-warning);
+}
+
+.ts-alert-card.high,
+.ts-alert-card.critical {
+  border-left-color: var(--ts-danger);
+}
+
+.ts-recovery-card {
+  width: min(100%, 520px);
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: var(--ts-bg-white);
+  border: 1px solid var(--ts-border-color);
+  border-radius: var(--ts-radius-md);
+  box-shadow: var(--ts-shadow-card);
+}
+
+.ts-security-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-left: 4px solid var(--ts-secondary);
+}
+
+.ts-filter-card {
+  box-shadow: var(--ts-shadow-sm);
+}
+
+.ts-preferences-section {
+  padding: 1rem;
+  border: 1px solid var(--ts-border-color);
+  border-radius: var(--ts-radius-md);
+  background: color-mix(in srgb, var(--ts-bg-light) 45%, var(--ts-bg-white));
+}
+
+.ts-recovery-shell {
+  width: min(100%, 560px);
+  margin-inline: auto;
+}
+
+.ts-otp-input {
+  font-family: var(--ts-font-mono);
+  letter-spacing: 0.18rem;
+}
+
+.ts-device-card {
+  min-height: 100%;
+}
+
+.ts-alert-card {
+  border-left-width: 5px;
+}
+
+@media (max-width: 767.98px) {
+  .ts-trust-score-hero {
+    padding: 1.5rem 1rem;
+  }
+
+  .ts-portal-header .dropdown .btn {
+    padding-inline: 0.5rem;
+  }
+}

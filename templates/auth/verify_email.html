@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Email{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block meta %}
+<meta name="description" content="TrustSphere email verification status.">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<main class="min-vh-100 d-flex justify-content-center align-items-center bg-light px-3 py-5">
+  <div class="card shadow-lg text-center w-100" style="max-width: 480px;">
+    <div class="card-body p-5">
+      {% if status == 'success' %}
+      <i class="bi bi-envelope-check-fill display-3 text-success"></i>
+      <h1 class="h4 mt-3">Email Verified!</h1>
+      <p class="text-muted">Your account is now active. You can sign in.</p>
+      <a class="btn btn-warning" href="{{ url_for('auth.login') }}">Go to Login</a>
+      {% elif status == 'expired' %}
+      <i class="bi bi-clock-fill display-3 text-danger"></i>
+      <h1 class="h4 mt-3">Link Expired</h1>
+      <p class="text-muted">This verification link has expired. Please register again or contact support.</p>
+      <a class="btn btn-warning" href="{{ url_for('auth.register') }}">Register Again</a>
+      {% else %}
+      <i class="bi bi-check-circle-fill display-3 text-info"></i>
+      <h1 class="h4 mt-3">Already Verified</h1>
+      <p class="text-muted">This account is already verified. Please sign in.</p>
+      <a class="btn btn-warning" href="{{ url_for('auth.login') }}">Sign In</a>
+      {% endif %}
+    </div>
+  </div>
+</main>
+{% endblock %}

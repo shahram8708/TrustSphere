@@ -1,0 +1,30 @@
+{% set flashed_messages = get_flashed_messages(with_categories=True) %}
+{% if flashed_messages %}
+<div id="ts-flash-overlay" class="ts-flash-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2050; pointer-events:none;">
+  <div class="container-fluid px-4 py-2 d-flex flex-column align-items-center" style="pointer-events:auto;">
+    {% for category, message in flashed_messages %}
+    {% set alert_class = {
+      'success': 'alert-success',
+      'error': 'alert-danger',
+      'warning': 'alert-warning',
+      'info': 'alert-info',
+      'danger': 'alert-danger'
+    }.get(category, 'alert-info') %}
+    <div class="alert {{ alert_class }} alert-dismissible show ts-flash-message mb-2" role="alert" aria-live="polite">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  </div>
+  <script>
+    (function() {
+      try {
+        var el = document.getElementById('ts-flash-overlay');
+        if (el && el.parentNode !== document.body) {
+          document.body.appendChild(el);
+        }
+      } catch (e) {}
+    })();
+  </script>
+</div>
+{% endif %}

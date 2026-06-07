@@ -1,0 +1,32 @@
+{% if pagination and pagination.pages > 1 %}
+{% set args = request.args.to_dict() %}
+{% set _ = args.pop('page', None) %}
+{% set start_page = [pagination.page - 2, 1] | max %}
+{% set end_page = [pagination.page + 2, pagination.pages] | min %}
+<nav class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3" aria-label="Pagination">
+  <div class="small text-muted">
+    Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }} to {{ [pagination.page * pagination.per_page, pagination.total] | min }} of {{ pagination.total }}
+  </div>
+  <ul class="pagination mb-0">
+    <li class="page-item {% if pagination.page == 1 %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.page - 1, **args) }}" aria-label="Previous">Previous</a>
+    </li>
+    {% if start_page > 1 %}
+    <li class="page-item"><a class="page-link" href="{{ url_for(request.endpoint, page=1, **args) }}">1</a></li>
+    {% if start_page > 2 %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+    {% endif %}
+    {% for page_num in range(start_page, end_page + 1) %}
+    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+      <a class="page-link" href="{{ url_for(request.endpoint, page=page_num, **args) }}">{{ page_num }}</a>
+    </li>
+    {% endfor %}
+    {% if end_page < pagination.pages %}
+    {% if end_page < pagination.pages - 1 %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+    <li class="page-item"><a class="page-link" href="{{ url_for(request.endpoint, page=pagination.pages, **args) }}">{{ pagination.pages }}</a></li>
+    {% endif %}
+    <li class="page-item {% if pagination.page == pagination.pages %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.page + 1, **args) }}" aria-label="Next">Next</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}

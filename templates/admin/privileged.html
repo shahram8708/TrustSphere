@@ -1,0 +1,154 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Privileged Access{% endblock %}
+{% block page_title %}Privileged Access Monitor{% endblock %}
+
+{% block admin_content %}
+{% set threat_level = "Critical" if summary_stats.high_risk_sessions > 5 else "Elevated" if summary_stats.alerts_generated > 0 else "Normal" %}
+{% if threat_level != "Normal" %}
+<div class="alert {% if threat_level == 'Critical' %}alert-danger{% else %}alert-warning{% endif %} d-flex align-items-center gap-3">
+  <i class="bi bi-shield-exclamation fs-4"></i>
+  <div>
+    <div class="fw-semibold">{{ threat_level }} insider threat posture</div>
+    <div class="small">Review high risk privileged sessions and generated anomalies.</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  {% for label, value, icon, color in [
+    ("Total Sessions", summary_stats.total_sessions, "bi-terminal", "secondary"),
+    ("Active Sessions", summary_stats.active_sessions, "bi-broadcast", "success"),
+    ("High Risk", summary_stats.high_risk_sessions, "bi-exclamation-triangle", "danger"),
+    ("Alerts Generated", summary_stats.alerts_generated, "bi-bell", "warning"),
+    ("Records Accessed", summary_stats.total_records_accessed, "bi-database", "info")
+  ] %}
+  <div class="col-6 col-xl">
+    <div class="ts-kpi-card h-100">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fs-3 fw-bold text-dark">{{ value }}</div>
+          <div class="text-muted small">{{ label }}</div>
+        </div>
+        <i class="bi {{ icon }} fs-3 text-{{ color }}"></i>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" action="{{ url_for('admin.privileged') }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3 col-xl-2">
+          <label class="form-label small fw-semibold" for="role">Role</label>
+          <select class="form-select" id="role" name="role">
+            <option value="">All Roles</option>
+            {% for role in role_options %}
+            <option value="{{ role }}" {% if selected_role == role %}selected{% endif %}>{{ role|replace("_", " ")|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-xl-2">
+          <label class="form-label small fw-semibold" for="privilege_level">Privilege</label>
+          <select class="form-select" id="privilege_level" name="privilege_level">
+            {% for value, label in [("all", "All"), ("standard", "Standard"), ("elevated", "Elevated"), ("admin", "Admin")] %}
+            <option value="{{ value }}" {% if selected_privilege_level == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-xl-2">
+          <label class="form-label small fw-semibold">Risk Range</label>
+          <div class="input-group">
+            <input class="form-control" type="number" min="0" max="100" name="risk_min" value="{{ risk_min }}">
+            <span class="input-group-text">to</span>
+            <input class="form-control" type="number" min="0" max="100" name="risk_max" value="{{ risk_max }}">
+          </div>
+        </div>
+        <div class="col-md-3 col-xl-2">
+          <label class="form-label small fw-semibold" for="has_anomaly">Anomaly</label>
+          <select class="form-select" id="has_anomaly" name="has_anomaly">
+            <option value="" {% if not has_anomaly %}selected{% endif %}>All</option>
+            <option value="true" {% if has_anomaly == "true" %}selected{% endif %}>With Alert</option>
+            <option value="false" {% if has_anomaly == "false" %}selected{% endif %}>No Alert</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-xl-2">
+          <label class="form-label small fw-semibold" for="date_from">From</label>
+          <input class="form-control" id="date_from" type="date" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="col-md-3 col-xl-2">
+          <label class="form-label small fw-semibold" for="date_to">To</label>
+          <input class="form-control" id="date_to" type="date" name="date_to" value="{{ date_to }}">
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Apply</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('admin.privileged') }}">Clear</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="fw-semibold"><i class="bi bi-shield-lock me-2"></i>Privileged Sessions</div>
+    <span class="badge text-bg-light">Export volume {{ summary_stats.total_export_kb }} KB</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 ts-admin-table">
+      <thead>
+        <tr>
+          <th scope="col">Session</th>
+          <th scope="col">Employee</th>
+          <th scope="col">Role</th>
+          <th scope="col">Privilege</th>
+          <th scope="col">System</th>
+          <th scope="col">Actions</th>
+          <th scope="col">Records</th>
+          <th scope="col">Risk</th>
+          <th scope="col">Anomalies</th>
+          <th scope="col">Started</th>
+          <th scope="col">Review</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in sessions %}
+        <tr class="{% if item.risk_score > 80 %}table-danger{% elif item.risk_score > 60 %}table-warning{% endif %}">
+          <td>
+            <span class="ts-masked-id">{{ item.id[:8] }}</span>
+            {% if item.is_active %}<span class="badge bg-success ms-1">LIVE</span>{% endif %}
+          </td>
+          <td>{% if item.employee %}<span class="ts-masked-id">{{ item.employee.get_masked_id() }}</span>{% else %}<span class="text-muted">Protected</span>{% endif %}</td>
+          <td>{{ item.role or "Unknown" }}</td>
+          <td><span class="badge text-bg-light">{{ item.privilege_level|title }}</span></td>
+          <td>{{ item.system_accessed or "Unknown" }}</td>
+          <td>{{ item.actions_count }}</td>
+          <td>{{ item.data_records_accessed }}</td>
+          <td><span class="badge bg-{{ risk_color(item.risk_score) }}">{{ item.risk_score }}</span></td>
+          <td>
+            {% if item.get_anomaly_count() %}
+            <span class="badge text-bg-danger">{{ item.get_anomaly_count() }}</span>
+            {% else %}
+            <span class="text-muted">None</span>
+            {% endif %}
+          </td>
+          <td>{% if item.started_at %}<span data-timestamp="{{ item.started_at.isoformat() }}">{{ item.started_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}</td>
+          <td><a class="btn btn-sm btn-primary" href="{{ url_for('admin.privileged_detail', session_id=item.id) }}">Investigate</a></td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="11">
+            <div class="ts-empty-state"><i class="bi bi-shield-lock"></i><span>No privileged sessions match these filters.</span></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    {% include "partials/_pagination.html" %}
+  </div>
+</div>
+{% endblock %}

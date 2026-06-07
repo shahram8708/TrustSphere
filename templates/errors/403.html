@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error_title|default('Access Denied') }}{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+{% set code = error_code|default(403) %}
+{% set title = error_title|default('Access Denied') %}
+{% set message = error_message|default('You do not have permission to access this resource.') %}
+<main class="min-vh-100 d-flex align-items-center justify-content-center bg-light px-3 py-5">
+  <div class="text-center" style="max-width: 640px;">
+    <a href="{{ url_for('public.index') }}"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt="TrustSphere" height="48" class="mb-4"></a>
+    <i class="bi bi-lock-fill display-4 text-info d-block"></i>
+    <div class="display-1 fw-bold ts-text-primary">{{ code }}</div>
+    <h1 class="h2">{{ title }}</h1>
+    <p class="lead text-muted">{{ message }}</p>
+    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-4">
+      <button type="button" class="btn btn-outline-secondary" onclick="history.back()">Go Back</button>
+      <a class="btn btn-warning" href="{{ url_for('admin.dashboard') }}">Return to Dashboard</a>
+    </div>
+    <p class="small text-muted mt-4">If you believe this is an error, please contact your TrustSphere administrator.</p>
+  </div>
+</main>
+{% endblock %}

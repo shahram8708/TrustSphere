@@ -1,0 +1,62 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Compliance Reports{% endblock %}
+{% block page_title %}Compliance & Security Reports{% endblock %}
+
+{% block admin_content %}
+<div class="card mb-4">
+  <div class="card-header fw-semibold"><i class="bi bi-clock-history me-2"></i>Recently Generated</div>
+  <div class="list-group list-group-flush">
+    {% for entry in recent_reports %}
+    <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div>
+        <div class="fw-semibold">{{ report_types.get(entry.report_type, {}).get("name", entry.report_type|replace("_", " ")|title) }}</div>
+        <div class="small text-muted">
+          {% if entry.created_at %}<span data-timestamp="{{ entry.created_at.isoformat() }}">{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}
+          <span class="badge text-bg-light ms-2">{{ entry.format|upper }}</span>
+        </div>
+      </div>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.reports_download', report_id=entry.task_id) }}">Download &rarr;</a>
+    </div>
+    {% else %}
+    <div class="list-group-item text-muted">No reports generated yet.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% set icons = {
+  "rbi_report": "bi-bank2",
+  "gdpr_compliance": "bi-shield-shaded",
+  "iso27001": "bi-clipboard-check",
+  "alert_summary": "bi-bar-chart",
+  "user_risk": "bi-people",
+  "incident": "bi-exclamation-diamond"
+} %}
+
+<div class="row g-4">
+  {% for key, metadata in report_types.items() %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100 border-top border-4 border-info">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="ts-event-icon bg-info"><i class="bi {{ icons.get(key, 'bi-file-earmark-bar-graph') }}"></i></div>
+          <div>
+            <h2 class="h5 mb-1">{{ metadata.name }}</h2>
+            <span class="badge text-bg-light">{{ metadata.suggested_frequency }}</span>
+          </div>
+        </div>
+        <p class="text-muted small">{{ metadata.description }}</p>
+        <div class="d-flex flex-wrap gap-2">
+          {% for mapping in metadata.regulatory_mapping %}
+          <span class="badge text-bg-secondary">{{ mapping }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card-footer bg-white">
+        <a class="btn btn-primary w-100" href="{{ url_for('admin.reports_generate', report_type=metadata.report_type_key) }}"><i class="bi bi-file-earmark-arrow-down me-1"></i>Generate Report &rarr;</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

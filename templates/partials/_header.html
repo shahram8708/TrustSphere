@@ -1,0 +1,35 @@
+<nav class="navbar navbar-expand-lg sticky-top ts-navbar navbar-dark">
+  <div class="container-fluid px-3 px-lg-4">
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{{ url_for('public.index') }}">
+      <svg width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="TrustSphere shield">
+        <path d="M32 4c12 7 22 8 28 8v19c0 20-12 34-28 43C16 65 4 51 4 31V12c6 0 16-1 28-8z" fill="none" stroke="#C9A84C" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M32 12c8 4 14 5 20 6v13c0 14-8 24-20 31C20 55 12 45 12 31V18c6-1 12-2 20-6z" fill="#006D77"/>
+        <path d="M22 24h20M32 24v24" fill="none" stroke="#F8F9FA" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <span>TrustSphere</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#ts-public-nav" aria-controls="ts-public-nav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="ts-public-nav">
+      <ul class="navbar-nav ms-lg-auto mb-2 mb-lg-0 align-items-lg-center">
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'public.features' %}active{% endif %}" href="{{ url_for('public.features') }}">Features</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'public.compliance' %}active{% endif %}" href="{{ url_for('public.compliance') }}">Compliance</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'public.pricing' %}active{% endif %}" href="{{ url_for('public.pricing') }}">Pricing</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'public.about' %}active{% endif %}" href="{{ url_for('public.about') }}">About</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'public.contact' %}active{% endif %}" href="{{ url_for('public.contact') }}">Contact</a></li>
+      </ul>
+      <div class="d-flex flex-column flex-lg-row gap-2 ms-lg-3">
+        {% if current_user.is_authenticated %}
+        <a class="btn btn-warning btn-sm" href="{{ url_for('admin.dashboard') }}">Go to Dashboard</a>
+        {% else %}
+        <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login') }}">Login</a>
+        <a class="btn btn-warning btn-sm" href="{{ url_for('public.demo') }}">Request Demo</a>
+        {% endif %}
+        <button id="ts-install-btn" class="btn btn-outline-light btn-sm ts-install-btn d-none" type="button" onclick="triggerPWAInstall()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Install TrustSphere" aria-label="Install TrustSphere app" aria-hidden="true">
+          <i class="bi bi-download me-lg-1" aria-hidden="true"></i><span class="d-none d-lg-inline">Install App</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>

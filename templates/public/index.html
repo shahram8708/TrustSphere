@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Continuous Identity Trust{% endblock %}
+
+{% block meta %}
+<meta name="description" content="TrustSphere provides continuous identity trust, risk based authentication, and compliance evidence for banking security teams.">
+<meta property="og:title" content="TrustSphere Continuous Identity Trust">
+<meta property="og:description" content="Privacy first risk intelligence for modern banking security.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ts-hero-section {
+    min-height: 78vh;
+    background: var(--ts-bg-dark);
+  }
+
+  .ts-hero-widget {
+    animation: tsFadeIn 0.7s ease both;
+    background: color-mix(in srgb, var(--ts-primary) 82%, black);
+    border: 1px solid color-mix(in srgb, var(--ts-text-light) 18%, transparent);
+  }
+
+  .ts-live-dot {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: var(--ts-success);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ts-success) 55%, transparent);
+    animation: tsPulseLive 1.5s infinite;
+  }
+
+  .ts-flow-step {
+    position: relative;
+  }
+
+  @media (min-width: 768px) {
+    .ts-flow-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 1.25rem;
+      left: calc(50% + 2.25rem);
+      width: calc(100% - 4.5rem);
+      border-top: 2px solid color-mix(in srgb, var(--ts-accent) 60%, transparent);
+    }
+  }
+
+  .ts-threat-card {
+    border-left: 4px solid var(--ts-accent);
+    background: color-mix(in srgb, var(--ts-primary) 86%, black);
+  }
+
+  .ts-social-proof {
+    background: color-mix(in srgb, var(--ts-secondary) 10%, var(--ts-bg-white));
+  }
+
+  @keyframes tsFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes tsPulseLive {
+    70% {
+      box-shadow: 0 0 0 0.65rem transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+  <section class="ts-hero-section d-flex align-items-center py-5">
+    <div class="container py-5">
+      <div class="row align-items-center g-5">
+        <div class="col-lg-6">
+          <span class="badge text-bg-info mb-3">Privacy First Identity Trust Platform</span>
+          <h1 class="display-4 fw-bold text-white mb-4">Continuous Identity Trust for Modern Banking</h1>
+          <p class="lead text-white-50 mb-4">TrustSphere evaluates identity risk continuously across digital banking sessions so genuine users move smoothly and high risk activity receives proportionate verification.</p>
+          <div class="d-flex flex-column flex-sm-row gap-3 mb-4">
+            <a class="btn btn-warning btn-lg" href="{{ url_for('public.demo') }}">Request Demo</a>
+            <a class="btn btn-outline-light btn-lg" href="#how-it-works">See How It Works</a>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge text-bg-light"><i class="bi bi-check-circle-fill text-success me-1"></i>RBI Framework Aligned</span>
+            <span class="badge text-bg-light"><i class="bi bi-check-circle-fill text-success me-1"></i>ISO 27001 Ready</span>
+            <span class="badge text-bg-light"><i class="bi bi-check-circle-fill text-success me-1"></i>GDPR Compliant</span>
+            <span class="badge text-bg-light"><i class="bi bi-check-circle-fill text-success me-1"></i>DPDP Act Ready</span>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card ts-hero-widget text-white shadow-lg">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                  <h2 class="h5 text-white mb-1">Live Risk Monitoring</h2>
+                  <div class="small text-white-50">CRE Processing</div>
+                </div>
+                <span class="small"><span class="ts-live-dot me-2"></span>Live</span>
+              </div>
+              <div class="d-grid gap-3">
+                <div class="d-flex align-items-center justify-content-between gap-3 p-3 rounded bg-white bg-opacity-10">
+                  <div>
+                    <div class="fw-semibold">USR 8A41***</div>
+                    <div class="small text-white-50">Known device, Mumbai</div>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge text-bg-success">Low 24</span>
+                    <div class="small text-white-50 mt-1">Allowed</div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between gap-3 p-3 rounded bg-white bg-opacity-10">
+                  <div>
+                    <div class="fw-semibold">USR 13C9***</div>
+                    <div class="small text-white-50">New browser, Delhi</div>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge text-bg-warning">Medium 58</span>
+                    <div class="small text-white-50 mt-1">Monitoring</div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between gap-3 p-3 rounded bg-white bg-opacity-10">
+                  <div>
+                    <div class="fw-semibold">USR 02F7***</div>
+                    <div class="small text-white-50">VPN, device drift</div>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge text-bg-danger">High 81</span>
+                    <div class="small text-white-50 mt-1">Step Up Triggered</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-light">
+    <div class="container">
+      <div class="row g-4 text-center">
+        <div class="col-6 col-md-3">
+          <i class="bi bi-person-lock fs-2 text-danger"></i>
+          <div class="display-6 fw-bold text-danger mt-2">{{ stats.ato_growth }}</div>
+          <p class="mb-1 fw-semibold">Increase in ATO Attacks from 2019 to 2023</p>
+          <small class="text-muted">Source: AITE Group</small>
+        </div>
+        <div class="col-6 col-md-3">
+          <i class="bi bi-person-badge fs-2 text-warning"></i>
+          <div class="display-6 fw-bold text-warning mt-2">{{ stats.insider_threat_pct }}</div>
+          <p class="mb-1 fw-semibold">Of All Breaches Are Insider Threats</p>
+          <small class="text-muted">Source: Verizon DBIR 2023</small>
+        </div>
+        <div class="col-6 col-md-3">
+          <i class="bi bi-cash-coin fs-2 text-danger"></i>
+          <div class="display-6 fw-bold text-danger mt-2">{{ stats.fraud_losses }}</div>
+          <p class="mb-1 fw-semibold">Annual Global Banking Fraud Losses</p>
+          <small class="text-muted">Source: Nilson Report 2023</small>
+        </div>
+        <div class="col-6 col-md-3">
+          <i class="bi bi-phone fs-2 text-info"></i>
+          <div class="display-6 fw-bold text-info mt-2">{{ stats.upi_volume }}</div>
+          <p class="mb-1 fw-semibold">UPI Monthly Transaction Volume at Risk</p>
+          <small class="text-muted">Source: RBI, December 2023</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works" class="py-5 ts-bg-primary text-white">
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <h2 class="h1 text-white">Invisible Protection. Proportionate Response.</h2>
+        <p class="lead text-white-50">TrustSphere evaluates identity trust continuously, intervening only when genuine risk is detected.</p>
+      </div>
+      <div class="row g-4 text-center">
+        <div class="col-md-3 ts-flow-step">
+          <span class="ts-step-indicator mb-3">1</span>
+          <i class="bi bi-eye-slash fs-1 d-block text-warning mb-3"></i>
+          <h3 class="h5 text-white">Silent Monitoring</h3>
+          <p class="text-white-50 mb-0">Device fingerprinting and behavioural biometrics collect signals passively. No interruption to the user experience.</p>
+        </div>
+        <div class="col-md-3 ts-flow-step">
+          <span class="ts-step-indicator mb-3">2</span>
+          <i class="bi bi-cpu fs-1 d-block text-warning mb-3"></i>
+          <h3 class="h5 text-white">Multi Signal Analysis</h3>
+          <p class="text-white-50 mb-0">The Continuous Risk Engine correlates device, behavioural, network, and transaction signals in under 100ms.</p>
+        </div>
+        <div class="col-md-3 ts-flow-step">
+          <span class="ts-step-indicator mb-3">3</span>
+          <i class="bi bi-bar-chart-line fs-1 d-block text-warning mb-3"></i>
+          <h3 class="h5 text-white">Composite Risk Scoring</h3>
+          <p class="text-white-50 mb-0">A normalised risk score from 0 to 100 is produced for every session event and updated throughout the session.</p>
+        </div>
+        <div class="col-md-3 ts-flow-step">
+          <span class="ts-step-indicator mb-3">4</span>
+          <i class="bi bi-shield-check fs-1 d-block text-warning mb-3"></i>
+          <h3 class="h5 text-white">Proportionate Response</h3>
+          <p class="text-white-50 mb-0">Low risk actions proceed without friction. High risk events trigger the minimum necessary verification.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-white">
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <h2 class="h1">The Complete Identity Trust Stack</h2>
+        <p class="lead text-muted">Eight purpose built modules that work together to protect every digital banking touchpoint.</p>
+      </div>
+      <div class="row g-4">
+        {% set highlights = [
+          (1, 'bi-cpu-fill', 'Continuous Risk Engine', 'Real time identity confidence scoring across every session event. Weighted ensemble model with under 100ms latency.'),
+          (2, 'bi-fingerprint', 'Behavioural Biometrics', 'Passive monitoring of typing rhythm, mouse patterns, and touch gestures builds an uncopiable user profile.'),
+          (3, 'bi-phone-vibrate', 'Device Intelligence', 'Persistent device identity through fuzzy fingerprinting detects new, rooted, and emulated devices.'),
+          (4, 'bi-person-check', 'KYC Risk Scoring', 'Risk scored onboarding catches synthetic identities, deepfakes, and scripted applications before account activation.'),
+          (6, 'bi-shield-lock', 'Privileged Access Monitor', 'Continuous insider threat detection through behavioural baseline monitoring of privileged employee sessions.'),
+          (8, 'bi-file-earmark-check', 'Compliance Reporting', 'Automated RBI, GDPR, ISO 27001, and DPDP Act reports with full evidential audit trails.')
+        ] %}
+        {% for item in highlights %}
+        <div class="col-md-4">
+          <article class="ts-feature-card">
+            <i class="bi {{ item[1] }}"></i>
+            <h3 class="h5 mt-3">{{ item[2] }}</h3>
+            <p class="text-muted">{{ item[3] }}</p>
+            <a class="fw-semibold" href="{{ url_for('public.features') }}#feature-{{ item[0] }}">Learn More</a>
+          </article>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-light">
+    <div class="container py-4">
+      <h2 class="h1 text-center mb-4">Built for Every Stakeholder</h2>
+      <ul class="nav nav-tabs justify-content-center mb-4" id="personaTabs" role="tablist">
+        {% for persona in ['Customers', 'Security Analysts', 'Compliance Officers', 'IT Administrators'] %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if loop.first %}active{% endif %}" id="persona-{{ loop.index }}-tab" data-bs-toggle="tab" data-bs-target="#persona-{{ loop.index }}" type="button" role="tab">{{ persona }}</button>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="tab-content">
+        {% set personas = [
+          ('Aditya Mehta', 'Digital Banking Customer', 'Moves through legitimate banking actions with less unnecessary OTP friction.', 'Repeated static challenges interrupt ordinary payments.', 'Trusted activity continues silently while unusual activity receives verification.'),
+          ('Priya Sharma', 'Security Analyst', 'Receives prioritised identity risk alerts with clear contributing factors.', 'Analysts investigate disconnected alerts without context.', 'Alerts are ranked by severity, evidence, and customer impact.'),
+          ('Rajesh Kumar', 'Compliance Officer', 'Exports evidence mapped to banking and privacy frameworks.', 'Reports require manual collection from multiple systems.', 'Audit logs and compliance reports are available from one governed platform.'),
+          ('Meera Pillai', 'IT Administrator', 'Configures policy thresholds and integration settings for each institution.', 'Static rules are difficult to tune across channels.', 'Risk policy can reflect channel, role, and institution needs.')
+        ] %}
+        {% for persona in personas %}
+        <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="persona-{{ loop.index }}" role="tabpanel" tabindex="0">
+          <div class="row g-4 align-items-center">
+            <div class="col-lg-6">
+              <h3>{{ persona[0] }}</h3>
+              <p class="fw-semibold text-info">{{ persona[1] }}</p>
+              <p class="lead">{{ persona[2] }}</p>
+            </div>
+            <div class="col-lg-6">
+              <div class="ts-card">
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <h4 class="h6 text-danger">Before TrustSphere</h4>
+                    <p class="mb-0 text-muted">{{ persona[3] }}</p>
+                  </div>
+                  <div class="col-sm-6">
+                    <h4 class="h6 text-success">After TrustSphere</h4>
+                    <p class="mb-0 text-muted">{{ persona[4] }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 ts-bg-primary">
+    <div class="container py-4">
+      <h2 class="h1 text-white text-center mb-5">The Five Threats TrustSphere Eliminates</h2>
+      <div class="row g-4">
+        {% set threats = [
+          ('bi-person-lock', 'Account Takeover', 'Credential stuffing, SIM swap, and phishing attacks are detected through device, network, and behaviour mismatch.'),
+          ('bi-person-vcard', 'KYC Onboarding Fraud', 'Synthetic identities and deepfake assisted applications are scored before activation.'),
+          ('bi-database-lock', 'Insider Privilege Misuse', 'Unusual exports, sensitive access, and excessive record viewing become visible in real time.'),
+          ('bi-browser-chrome', 'Session Hijacking', 'Man in the browser and stolen token activity can be challenged after login when session context changes.'),
+          ('bi-phone-flip', 'Device & Channel Compromise', 'Rooted devices, emulators, and unstable fingerprints raise risk before sensitive actions proceed.')
+        ] %}
+        {% for threat in threats %}
+        <div class="col-md-6 col-lg">
+          <article class="card h-100 text-white ts-threat-card">
+            <div class="card-body">
+              <i class="bi {{ threat[0] }} fs-2 text-warning"></i>
+              <h3 class="h5 text-white mt-3">{{ threat[1] }}</h3>
+              <p class="text-white-50">{{ threat[2] }}</p>
+              <a class="text-warning fw-semibold" href="{{ url_for('public.features') }}">How TrustSphere Responds</a>
+            </div>
+          </article>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-white">
+    <div class="container py-4">
+      <h2 class="h1 text-center mb-4">Security That Aligns With Experience</h2>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead>
+            <tr>
+              <th class="table-danger">Before TrustSphere</th>
+              <th class="table-success">After TrustSphere</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set transformations = [
+              ('Static login plus OTP is the only protection', 'Continuous risk based identity confidence scoring'),
+              ('Session trusted blindly after login', 'Every action evaluated against current risk context'),
+              ('All users experience same friction', 'Friction proportional to individual risk score'),
+              ('Fraud detected hours or days after occurrence', 'Anomalies detected in real time under 500ms'),
+              ('Insider threats invisible until post incident', 'Privileged access behaviour monitored continuously'),
+              ('Compliance reports assembled manually', 'Automated regulatory reporting with full audit trail'),
+              ('KYC completed once at onboarding', 'Identity continuously revalidated across the lifecycle'),
+              ('Security and UX are opposing forces', 'Security and UX are aligned through risk intelligence')
+            ] %}
+            {% for row in transformations %}
+            <tr>
+              <td class="table-danger"><i class="bi bi-x-circle me-2"></i>{{ row[0] }}</td>
+              <td class="table-success"><i class="bi bi-check-circle me-2"></i>{{ row[1] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 ts-social-proof">
+    <div class="container py-4">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-7">
+          <i class="bi bi-quote display-4 text-info"></i>
+          <blockquote class="fs-4 fst-italic">"TrustSphere reduced our false positive alert rate by 94% within the first month of deployment. Our SOC team finally has time to focus on genuine threats."</blockquote>
+          <p class="fw-semibold mb-3">Vikram Nair, Chief Information Security Officer, Coastal Finance Bank</p>
+          <div class="border rounded bg-white text-muted p-3 d-inline-block">Coastal Finance Bank</div>
+        </div>
+        <div class="col-lg-5">
+          <div class="d-grid gap-3">
+            <div class="ts-stat-card"><span class="ts-stat-number">60 plus</span><span class="ts-stat-label">Banks Protected</span></div>
+            <div class="ts-stat-card"><span class="ts-stat-number">99.97%</span><span class="ts-stat-label">Uptime SLA</span></div>
+            <div class="ts-stat-card"><span class="ts-stat-number">Under 100ms</span><span class="ts-stat-label">Risk Evaluation</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 ts-bg-accent">
+    <div class="container py-4 text-center">
+      <h2 class="h1 text-dark">Ready to Secure Your Digital Banking?</h2>
+      <p class="lead text-dark">Join the growing network of banks that trust TrustSphere to protect their customers.</p>
+      <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+        <a class="btn btn-primary btn-lg" href="{{ url_for('public.demo') }}">Schedule a Demo</a>
+        <a class="btn btn-outline-dark btn-lg" href="{{ url_for('public.contact') }}">Read the Whitepaper</a>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

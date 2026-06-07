@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Portal{% endblock %}
+
+{% block header %}
+{% include "partials/_portal_header.html" %}
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
+{% endblock %}
+
+{% block body_attrs %}
+data-login-url="{{ url_for('auth.login') }}"
+data-register-device="{{ register_device | default('false') }}"
+{% endblock %}
+
+{% block content %}
+<main class="ts-portal-main container-fluid py-4">
+  {% block portal_content %}{% endblock %}
+</main>
+{% endblock %}
+
+{% block footer %}
+<footer class="border-top bg-white py-3">
+  <div class="container-fluid d-flex flex-column flex-md-row align-items-center justify-content-between gap-2">
+    <small class="text-muted">&copy; {{ current_year }} {{ institution_name }}. All Rights Reserved.</small>
+    <span class="badge text-bg-light border">
+      <i class="bi bi-shield-check me-1 text-success"></i>Secured by TrustSphere
+    </span>
+  </div>
+</footer>
+{% endblock %}

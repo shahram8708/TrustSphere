@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% from "macros/form_macros.html" import render_checkbox %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Sign in to the TrustSphere admin portal.">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<main class="min-vh-100 d-flex justify-content-center align-items-center bg-light px-3 py-5">
+  <div class="card shadow-lg w-100" style="max-width: 480px; border-top: 5px solid var(--ts-primary);">
+    <div class="card-body p-4 p-sm-5">
+      <div class="text-center mb-4">
+        <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="TrustSphere" height="48" class="mb-2">
+        <div class="small text-muted">Admin Portal</div>
+      </div>
+      <h1 class="h4 text-center">Sign In to TrustSphere</h1>
+      <p class="text-muted text-center">Banking Security Operations Platform</p>
+
+      <form id="loginForm" method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="geo_lat" id="geo_lat" value="">
+        <input type="hidden" name="geo_lng" id="geo_lng" value="">
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.identifier.id }}">{{ form.identifier.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            {{ form.identifier(class=("form-control" ~ (" is-invalid" if form.identifier.errors else "")), placeholder="Email or User ID") }}
+          </div>
+          {% for error in form.identifier.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.password.id }}">{{ form.password.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            {{ form.password(class=("form-control" ~ (" is-invalid" if form.password.errors else "")), placeholder="Enter your password") }}
+            <button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Show password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          {% for error in form.password.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        {{ render_checkbox(form.remember_me) }}
+        <button type="submit" class="btn btn-warning w-100">Sign In</button>
+      </form>
+
+      <div class="text-center mt-3">
+        <a href="{{ url_for('auth.forgot_password') }}">Forgot your password?</a>
+      </div>
+
+      <div class="d-flex align-items-center gap-3 my-4">
+        <hr class="flex-grow-1">
+        <span class="small text-muted">OR</span>
+        <hr class="flex-grow-1">
+      </div>
+
+      <div class="text-center">
+        <a class="fw-semibold" href="{{ url_for('auth.register') }}">Register your institution</a>
+        <p class="small text-muted mb-0">Set up TrustSphere for your bank</p>
+      </div>
+    </div>
+    <div class="card-footer text-center small text-muted">
+      Protected by TrustSphere. Enterprise Grade Security
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var button = document.getElementById("togglePassword");
+    var input = document.getElementById("{{ form.password.id }}");
+    if (button && input) {
+      button.addEventListener("click", function () {
+        var show = input.type === "password";
+        input.type = show ? "text" : "password";
+        button.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      });
+    }
+
+    var form = document.getElementById("loginForm");
+    var latInput = document.getElementById("geo_lat");
+    var lngInput = document.getElementById("geo_lng");
+    if (!form) return;
+
+    form.addEventListener("submit", function (e) {
+      // If coordinates already present, allow submit
+      if (latInput && latInput.value && lngInput && lngInput.value) return;
+      e.preventDefault();
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser. Please enable location to sign in.");
+        return;
+      }
+      // Request current position; on success populate hidden inputs and submit
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          if (latInput) latInput.value = position.coords.latitude;
+          if (lngInput) lngInput.value = position.coords.longitude;
+          form.submit();
+        },
+        function (err) {
+          if (err && err.code === err.PERMISSION_DENIED) {
+            // Show a friendly inline message
+            var node = document.createElement('div');
+            node.className = 'alert alert-danger mt-3';
+            node.textContent = 'Please allow location access to sign in.';
+            form.parentNode.insertBefore(node, form.nextSibling);
+          } else {
+            alert('Unable to retrieve location. Please try again.');
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  })();
+</script>
+{% endblock %}

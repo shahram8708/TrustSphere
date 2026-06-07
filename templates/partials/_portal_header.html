@@ -1,0 +1,25 @@
+{% set bank_name = g.institution.name if g.institution else 'Your Bank' %}
+{% set display_name = current_user.display_name if current_user.is_authenticated and current_user.display_name is defined and current_user.display_name else 'Customer' %}
+<header class="ts-portal-header">
+  <div class="container-fluid py-3 d-flex align-items-center justify-content-between gap-3">
+    <a class="navbar-brand fw-semibold text-dark" href="{{ url_for('portal.dashboard') }}">{{ bank_name }}</a>
+    <div class="d-flex align-items-center gap-2">
+      <span class="small text-muted d-none d-md-inline">Welcome, {{ display_name }}</span>
+      <button class="btn btn-light position-relative" type="button" aria-label="Security alerts">
+        <i class="bi bi-bell"></i>
+        {% if open_alerts_count > 0 %}
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ open_alerts_count }}</span>
+        {% endif %}
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open account menu">
+          <i class="bi bi-person-circle"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{{ url_for('portal.preferences') }}">My Security Settings</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Log Out</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</header>

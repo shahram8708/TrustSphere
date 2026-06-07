@@ -1,0 +1,162 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Alert Queue{% endblock %}
+{% block page_title %}Alert Management{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+  <div class="d-flex flex-wrap gap-2">
+    {% for status in ["open", "investigating", "resolved"] %}
+    <a class="btn btn-sm {% if selected_status == status %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('admin.alerts', status=status) }}">
+      {{ status|replace("_", " ")|title }}
+      <span class="badge text-bg-light ms-1">{{ alert_counts_by_status.get(status, 0) }}</span>
+    </a>
+    {% endfor %}
+    <a class="btn btn-sm {% if selected_status == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="{{ url_for('admin.alerts', status='all') }}">All</a>
+  </div>
+  <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#ts-alert-filter-panel" aria-expanded="false" aria-controls="ts-alert-filter-panel">
+    <i class="bi bi-funnel me-1"></i>Filters
+  </button>
+</div>
+
+<div class="collapse mb-3" id="ts-alert-filter-panel">
+  <div class="card card-body">
+    <form method="get" action="{{ url_for('admin.alerts') }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-lg-3">
+          <label class="form-label small fw-semibold">Severity</label>
+          <div class="d-flex flex-wrap gap-2">
+            {% for severity in severity_options %}
+            <label class="form-check form-check-inline mb-0">
+              <input class="form-check-input" type="checkbox" name="severity" value="{{ severity }}" {% if severity in selected_severities %}checked{% endif %}>
+              <span class="form-check-label">{{ severity|title }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+          <label class="form-label small fw-semibold" for="alert_type">Type</label>
+          <select class="form-select" id="alert_type" name="alert_type">
+            <option value="">All Types</option>
+            {% for alert_type in alert_type_options %}
+            <option value="{{ alert_type }}" {% if selected_type == alert_type %}selected{% endif %}>{{ alert_type|replace("_", " ")|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 col-lg-2">
+          <label class="form-label small fw-semibold" for="status">Status</label>
+          <select class="form-select" id="status" name="status">
+            {% for status in status_options %}
+            <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status|replace("_", " ")|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 col-lg-2">
+          <label class="form-label small fw-semibold" for="date_from">From</label>
+          <input class="form-control" id="date_from" name="date_from" type="date" value="{{ selected_date_from }}">
+        </div>
+        <div class="col-md-4 col-lg-2">
+          <label class="form-label small fw-semibold" for="date_to">To</label>
+          <input class="form-control" id="date_to" name="date_to" type="date" value="{{ selected_date_to }}">
+        </div>
+        <div class="col-md-8 col-lg-1 d-flex gap-2">
+          <button class="btn btn-primary w-100" type="submit">Apply</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('admin.alerts') }}">Clear</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if selected_severities or selected_type or selected_status != "open" or selected_date_from or selected_date_to %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+  {% for severity in selected_severities %}
+  <span class="badge text-bg-light">Severity {{ severity|title }}</span>
+  {% endfor %}
+  {% if selected_type %}<span class="badge text-bg-light">Type {{ selected_type|replace("_", " ")|title }}</span>{% endif %}
+  {% if selected_status != "open" %}<span class="badge text-bg-light">Status {{ selected_status|replace("_", " ")|title }}</span>{% endif %}
+  {% if selected_date_from %}<span class="badge text-bg-light">From {{ selected_date_from }}</span>{% endif %}
+  {% if selected_date_to %}<span class="badge text-bg-light">To {{ selected_date_to }}</span>{% endif %}
+</div>
+{% endif %}
+
+<form id="ts-bulk-dismiss-form" method="post" action="{{ url_for('admin.alert_bulk_action') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="bulk_action" value="dismiss">
+  <div id="ts-bulk-alert-inputs"></div>
+</form>
+
+<div id="ts-bulk-actions" class="alert alert-info d-none d-flex align-items-center justify-content-between gap-3">
+  <div><span id="ts-bulk-count">0</span> alerts selected</div>
+  <button id="ts-bulk-dismiss-btn" class="btn btn-sm btn-outline-danger" type="button">Dismiss Selected</button>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="fw-semibold"><i class="bi bi-exclamation-triangle me-2"></i>Alert Queue</div>
+    <div class="small text-muted">Sorted by {{ sort_by|replace("_", " ")|title }} {{ sort_dir|upper }}</div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 ts-admin-table">
+      <thead>
+        <tr>
+          <th scope="col"><input id="select-all" class="form-check-input" type="checkbox" aria-label="Select all alerts"></th>
+          <th scope="col">Priority</th>
+          <th scope="col">Severity</th>
+          <th scope="col">Alert</th>
+          <th scope="col">User</th>
+          <th scope="col">Assigned</th>
+          <th scope="col">Status</th>
+          <th scope="col">Created</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alert in alerts %}
+        <tr class="ts-alert-row-{{ alert.severity }}">
+          <td><input class="form-check-input ts-alert-checkbox" type="checkbox" value="{{ alert.id }}" aria-label="Select alert {{ alert.id[:8] }}"></td>
+          <td><span class="badge text-bg-light">{{ "%.2f"|format(alert.ml_priority_score or 0) }}</span></td>
+          <td><span class="badge bg-{{ alert.get_severity_badge_color() }}"><i class="bi {{ alert.get_severity_icon() }} me-1"></i>{{ alert.severity|title }}</span></td>
+          <td>
+            <div class="fw-semibold text-truncate" style="max-width: 18rem;">{{ alert.title }}</div>
+            <div class="small text-muted">{{ alert.get_alert_type_display() }}</div>
+          </td>
+          <td>{% if alert.user %}<span class="ts-masked-id">{{ alert.user.get_masked_id() }}</span>{% else %}<span class="text-muted">Protected</span>{% endif %}</td>
+          <td>
+            {% if alert.assigned_analyst %}
+            <span class="text-muted small">{{ mask_email(alert.assigned_analyst.email) }}</span>
+            {% else %}
+            <span class="text-muted small">Unassigned</span>
+            {% endif %}
+          </td>
+          <td><span class="badge bg-{{ alert.get_status_badge_color() }}">{{ alert.status|replace("_", " ")|title }}</span></td>
+          <td>{% if alert.created_at %}<span data-timestamp="{{ alert.created_at.isoformat() }}">{{ alert.created_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}</td>
+          <td>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-sm btn-primary" href="{{ url_for('admin.alert_detail', alert_id=alert.id) }}">Investigate</a>
+              {% if alert.status == "open" %}
+              <form class="ts-quick-dismiss-form" method="post" action="{{ url_for('admin.alert_action', alert_id=alert.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="dismiss">
+                <input type="hidden" name="notes" value="Dismissed from alert queue">
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Dismiss</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9">
+            <div class="ts-empty-state"><i class="bi bi-shield-check"></i><span>No alerts match these filters.</span></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    {% include "partials/_pagination.html" %}
+  </div>
+</div>
+{% endblock %}

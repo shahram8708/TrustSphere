@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}About{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Learn about TrustSphere and its privacy first approach to banking identity trust.">
+<meta property="og:title" content="About TrustSphere">
+<meta property="og:description" content="Protecting banking while respecting privacy.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<main>
+  <section class="py-5 ts-bg-primary text-white">
+    <div class="container py-5">
+      <h1 class="display-5 fw-bold text-white">Protecting Banking. Respecting Privacy.</h1>
+      <p class="lead text-white-50 mt-3">TrustSphere is built on the belief that digital banking security should be continuous, contextual, and respectful of the customer. Identity trust should be evaluated from risk signals that are minimised, protected, and explainable. Security interventions should happen only when the evidence justifies them.</p>
+      <div class="row g-4 mt-4">
+        <div class="col-md-4">
+          <article class="card h-100">
+            <div class="card-body">
+              <i class="bi bi-shield-lock fs-2 text-info"></i>
+              <h2 class="h5 mt-3">Privacy by Design</h2>
+              <p class="mb-0 text-muted">TrustSphere stores hashed identifiers and anonymised behavioural vectors rather than raw sensitive content. Each signal is collected for a defined risk purpose.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-4">
+          <article class="card h-100">
+            <div class="card-body">
+              <i class="bi bi-sliders fs-2 text-info"></i>
+              <h2 class="h5 mt-3">Proportional Response</h2>
+              <p class="mb-0 text-muted">Trusted activity can proceed quietly while unusual activity receives only the verification level needed. This keeps protection aligned with user experience.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-4">
+          <article class="card h-100">
+            <div class="card-body">
+              <i class="bi bi-diagram-3 fs-2 text-info"></i>
+              <h2 class="h5 mt-3">Context Aware Intelligence</h2>
+              <p class="mb-0 text-muted">Risk decisions are based on device, network, behaviour, session, and policy context. Analysts receive explainable evidence for every significant decision.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-white">
+    <div class="container py-4">
+      <div class="row g-5 align-items-start">
+        <div class="col-lg-6">
+          <h2 class="h1">The Problem We Solve</h2>
+          <p class="lead text-muted">Banking identity risk now moves across login, onboarding, recovery, employee systems, and live sessions. TrustSphere connects those contexts into one continuous trust framework.</p>
+          <div class="list-group shadow-sm">
+            <div class="list-group-item"><i class="bi bi-person-lock text-danger me-2"></i>Account takeover through credential theft, phishing, and SIM swap.</div>
+            <div class="list-group-item"><i class="bi bi-person-vcard text-warning me-2"></i>KYC onboarding fraud using synthetic identities and manipulated documents.</div>
+            <div class="list-group-item"><i class="bi bi-shield-lock text-warning me-2"></i>Insider privilege misuse through excessive access or export behaviour.</div>
+            <div class="list-group-item"><i class="bi bi-browser-chrome text-danger me-2"></i>Session hijacking after a legitimate login succeeds.</div>
+            <div class="list-group-item"><i class="bi bi-phone text-warning me-2"></i>Device and channel compromise from rooted devices, emulators, and unsafe networks.</div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card border-info shadow-sm">
+            <div class="card-body p-4">
+              <h3 class="h4">The Gap</h3>
+              <p class="fs-5 fst-italic border-start border-info border-4 ps-3 mb-0">The gap is not the absence of security tools. The gap is the absence of a privacy preserving trust layer that connects identity, behaviour, device intelligence, access context, and regulatory evidence across the full banking lifecycle.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-light">
+    <div class="container py-4">
+      <h2 class="h1 text-center mb-5">Our Technology Foundation</h2>
+      <div class="row g-4">
+        {% set pillars = [
+          ('Risk Intelligence Engine', 'A continuously updated scoring system that converts multi signal identity context into proportionate security action.'),
+          ('Privacy Preserving Biometrics', 'Behavioural signals are represented as protected vectors, keeping raw biometric content out of storage.'),
+          ('Compliance First Architecture', 'Tenant isolation, audit logs, encryption, and reporting are designed around banking regulatory frameworks.'),
+          ('Continuous Authentication', 'Every meaningful session event can be reassessed because trust is never assumed after login.')
+        ] %}
+        {% for pillar in pillars %}
+        <div class="col-md-6">
+          <article class="ts-card h-100">
+            <h3 class="h5">{{ pillar[0] }}</h3>
+            <p class="text-muted mb-0">{{ pillar[1] }}</p>
+          </article>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 ts-bg-primary text-white">
+    <div class="container py-4">
+      <h2 class="h1 text-white text-center mb-5">A Global Problem, a Universal Solution</h2>
+      <div class="row g-4">
+        {% set stats = [
+          ('USD 485B', 'Global fraud losses', 'Nilson Report 2023'),
+          ('354%', 'ATO attack growth', 'AITE Group'),
+          ('34%', 'Insider threat breach share', 'Verizon DBIR 2023'),
+          ('INR 21T', 'UPI monthly volume', 'RBI December 2023'),
+          ('Rising', 'RBI cybersecurity incidents', 'RBI public reporting')
+        ] %}
+        {% for stat in stats %}
+        <div class="col-md">
+          <div class="card h-100 bg-white bg-opacity-10 text-white border-light border-opacity-25">
+            <div class="card-body">
+              <div class="display-6 fw-bold text-warning">{{ stat[0] }}</div>
+              <p class="fw-semibold mb-1">{{ stat[1] }}</p>
+              <small class="text-white-50">{{ stat[2] }}</small>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

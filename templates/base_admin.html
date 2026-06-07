@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set page_title = self.page_title() | trim %}
+<div class="ts-admin-wrapper">
+  {% include "partials/_admin_sidebar.html" %}
+  <div class="ts-admin-main">
+    {% include "partials/_admin_topbar.html" %}
+    <main class="ts-admin-content p-4">
+      {% block admin_content %}{% endblock %}
+    </main>
+  </div>
+  <div class="ts-sidebar-overlay d-none" id="ts-sidebar-overlay"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin-dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,61 @@
+<footer class="ts-footer py-5">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="TrustSphere" height="32">
+        </div>
+        <p class="small mb-0">Privacy first identity trust for banks, fintech teams, and security operations centers.</p>
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <h2 class="h6 text-white">Product</h2>
+        <ul class="list-unstyled small d-grid gap-2">
+          <li><a href="{{ url_for('public.features') }}">Features</a></li>
+          <li><a href="{{ url_for('public.compliance') }}">Compliance</a></li>
+          <li><a href="{{ url_for('public.pricing') }}">Pricing</a></li>
+          <li><a href="{{ url_for('public.demo') }}">Demo</a></li>
+          <li><a href="{{ url_for('public.api_docs') }}">API Docs</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <h2 class="h6 text-white">Company</h2>
+        <ul class="list-unstyled small d-grid gap-2">
+          <li><a href="{{ url_for('public.about') }}">About</a></li>
+          <li><a href="{{ url_for('public.contact') }}">Contact</a></li>
+          <li><a href="{{ url_for('public.about') }}">Careers</a></li>
+          <li><a href="{{ url_for('public.about') }}">Press</a></li>
+          <li><a href="{{ url_for('public.about') }}">Blog</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <h2 class="h6 text-white">Legal</h2>
+        <ul class="list-unstyled small d-grid gap-2">
+          <li><a href="{{ url_for('public.compliance') }}">Privacy Policy</a></li>
+          <li><a href="{{ url_for('public.compliance') }}">Terms of Service</a></li>
+          <li><a href="{{ url_for('public.compliance') }}">GDPR Notice</a></li>
+          <li><a href="{{ url_for('public.compliance') }}">Cookie Policy</a></li>
+          <li><a href="{{ url_for('public.compliance') }}">Security Policy</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-md-3 col-lg-3">
+        <h2 class="h6 text-white">Contact</h2>
+        <p class="small mb-2">contact@trustsphere.io</p>
+        <div class="d-flex gap-3 mb-3">
+          <a href="{{ url_for('public.contact') }}" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+          <a href="{{ url_for('public.contact') }}" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+        </div>
+        <a class="btn btn-warning btn-sm" href="{{ url_for('public.demo') }}">Get a Demo</a>
+      </div>
+    </div>
+    <hr class="border-light opacity-25 my-4">
+    <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
+      <small>&copy; {{ current_year }} TrustSphere. All Rights Reserved.</small>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="badge text-bg-light">RBI Framework Aligned</span>
+        <span class="badge text-bg-light">ISO 27001 Ready</span>
+        <span class="badge text-bg-light">GDPR Compliant</span>
+        <span class="badge text-bg-light">DPDP Act Ready</span>
+      </div>
+    </div>
+  </div>
+</footer>

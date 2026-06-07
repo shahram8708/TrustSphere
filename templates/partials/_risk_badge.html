@@ -1,0 +1,26 @@
+{% macro risk_badge(score, show_label=True, show_bar=False) %}
+{% set value = score|int %}
+{% if value <= 30 %}
+{% set color = 'success' %}
+{% set label = 'Low' %}
+{% set pulse = '' %}
+{% elif value <= 60 %}
+{% set color = 'warning text-dark' %}
+{% set label = 'Medium' %}
+{% set pulse = '' %}
+{% elif value <= 80 %}
+{% set color = 'danger' %}
+{% set label = 'High' %}
+{% set pulse = '' %}
+{% else %}
+{% set color = 'danger' %}
+{% set label = 'Critical' %}
+{% set pulse = 'ts-pulse' %}
+{% endif %}
+<span class="badge bg-{{ color }} {{ pulse }}">{{ value }}{% if show_label %} {{ label }}{% endif %}</span>
+{% if show_bar %}
+<div class="progress ts-progress-risk mt-1" role="progressbar" aria-valuenow="{{ value }}" aria-valuemin="0" aria-valuemax="100">
+  <div class="progress-bar" style="width: {{ value }}%"></div>
+</div>
+{% endif %}
+{% endmacro %}

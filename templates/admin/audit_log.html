@@ -1,0 +1,154 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+
+{% block admin_content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ total_entries_today }}</span>
+      <span class="ts-stat-label">entries today</span>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ pagination.total }}</span>
+      <span class="ts-stat-label">total entries</span>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number"><i class="bi bi-lock"></i></span>
+      <span class="ts-stat-label">Immutable Record</span>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  This audit log is append only and immutable. No entries can be modified or deleted, ensuring a tamper proof compliance record.
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#ts-audit-filter-panel" aria-expanded="false" aria-controls="ts-audit-filter-panel">
+      <i class="bi bi-funnel me-1"></i>Filters
+      {% if active_filter_count %}<span class="badge text-bg-primary ms-1">{{ active_filter_count }}</span>{% endif %}
+    </button>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.audit_log_export') }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}"><i class="bi bi-download me-1"></i>Export CSV</a>
+  </div>
+  <div class="collapse show" id="ts-audit-filter-panel">
+    <div class="card-body">
+      <form method="get" action="{{ url_for('admin.audit_log') }}">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3 col-xl-2">
+            <label class="form-label small fw-semibold" for="actor_type">Actor Type</label>
+            <select class="form-select" id="actor_type" name="actor_type">
+              <option value="">All</option>
+              {% for option in actor_type_options %}
+              <option value="{{ option }}" {% if selected_actor_type == option %}selected{% endif %}>{{ option|replace("_", " ")|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3 col-xl-2">
+            <label class="form-label small fw-semibold" for="target_type">Target Type</label>
+            <select class="form-select" id="target_type" name="target_type">
+              <option value="">All</option>
+              {% for option in target_type_options %}
+              <option value="{{ option }}" {% if selected_target_type == option %}selected{% endif %}>{{ option|replace("_", " ")|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <label class="form-label small fw-semibold" for="action">Action Contains</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input class="form-control" id="action" name="action" value="{{ action_contains }}" placeholder="policy.update">
+            </div>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <label class="form-label small fw-semibold" for="actor_email">Actor Email</label>
+            <input class="form-control" id="actor_email" name="actor_email" value="{{ actor_email }}" placeholder="admin@example.com">
+          </div>
+          <div class="col-md-3 col-xl-1">
+            <label class="form-label small fw-semibold" for="date_from">From</label>
+            <input class="form-control" id="date_from" type="date" name="date_from" value="{{ date_from }}">
+          </div>
+          <div class="col-md-3 col-xl-1">
+            <label class="form-label small fw-semibold" for="date_to">To</label>
+            <input class="form-control" id="date_to" type="date" name="date_to" value="{{ date_to }}">
+          </div>
+          <div class="col-12 d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Apply</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('admin.audit_log') }}">Clear</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header fw-semibold"><i class="bi bi-journal-check me-2"></i>Audit Entries</div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0 ts-admin-table">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Timestamp</th>
+          <th scope="col">Actor Type</th>
+          <th scope="col">Actor Email</th>
+          <th scope="col">Action</th>
+          <th scope="col">Target</th>
+          <th scope="col">IP Address</th>
+          <th scope="col">Expand</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td><span class="text-muted">#{{ entry.id }}</span></td>
+          <td>
+            {% if entry.created_at %}
+            <span data-timestamp="{{ entry.created_at.isoformat() }}" data-bs-toggle="tooltip" title="{{ entry.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}">{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+            {% endif %}
+          </td>
+          <td><span class="badge bg-{{ actor_badge_color(entry.actor_type) }}">{{ entry.actor_type|replace("_", " ")|title }}</span></td>
+          <td>{% if entry.actor_email %}{{ mask_email(entry.actor_email) }}{% else %}<span class="text-muted">{{ entry.actor_type }}</span>{% endif %}</td>
+          <td><span class="ts-masked-id">{{ entry.action }}</span></td>
+          <td>
+            <span>{{ entry.target_type or "system" }}</span>
+            {% if entry.target_id %}<span class="text-muted">{{ entry.target_id[:8] }}</span>{% endif %}
+          </td>
+          <td>{{ entry.ip_address or "N/A" }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#detail-{{ entry.id }}" aria-expanded="false" aria-controls="detail-{{ entry.id }}">
+              <i class="bi bi-chevron-down"></i>
+            </button>
+          </td>
+        </tr>
+        <tr class="collapse ts-audit-detail-row" id="detail-{{ entry.id }}">
+          <td colspan="8">
+            <div class="p-3 bg-light rounded">
+              <div class="fw-semibold mb-2">Details:</div>
+              <pre class="ts-detail-json mb-3">{{ entry.details | default('{}') }}</pre>
+              <div class="fw-semibold">User Agent:</div>
+              <div class="small text-muted">{{ entry.user_agent or "N/A" }}</div>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8">
+            <div class="ts-empty-state"><i class="bi bi-journal-check"></i><span>No audit entries match these filters.</span></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    {% include "partials/_pagination.html" %}
+  </div>
+</div>
+{% endblock %}

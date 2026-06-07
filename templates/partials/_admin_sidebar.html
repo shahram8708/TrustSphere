@@ -1,0 +1,92 @@
+{% set endpoint = request.endpoint or '' %}
+<nav id="ts-admin-sidebar" class="ts-admin-sidebar d-flex flex-column">
+  <div class="d-flex align-items-center gap-2 pb-3 border-bottom border-light border-opacity-25">
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="TrustSphere" height="32">
+    <span class="badge text-bg-light ms-auto">v{{ platform_version }}</span>
+  </div>
+
+  <div class="sidebar-section-label">Overview</div>
+  <ul class="nav nav-pills flex-column gap-1">
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint in ['admin.dashboard'] %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+        <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-section-label">Operations</div>
+  <ul class="nav nav-pills flex-column gap-1">
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint in ['admin.alerts', 'admin.alert_detail'] %}active{% endif %}" href="{{ url_for('admin.alerts') }}">
+        <i class="bi bi-exclamation-triangle"></i><span>Alert Queue</span>
+        {% if open_alerts_count > 0 %}<span class="badge bg-danger ms-auto">{{ open_alerts_count }}</span>{% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint in ['admin.users', 'admin.user_detail'] %}active{% endif %}" href="{{ url_for('admin.users') }}">
+        <i class="bi bi-people"></i><span>User Risk Profiles</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint == 'admin.sessions' %}active{% endif %}" href="{{ url_for('admin.sessions') }}">
+        <i class="bi bi-activity"></i><span>Session Monitor</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-section-label">Modules</div>
+  <ul class="nav nav-pills flex-column gap-1">
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint == 'admin.onboarding' %}active{% endif %}" href="{{ url_for('admin.onboarding') }}">
+        <i class="bi bi-person-vcard"></i><span>KYC Onboarding</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint == 'admin.privileged' %}active{% endif %}" href="{{ url_for('admin.privileged') }}">
+        <i class="bi bi-shield-lock"></i><span>Privileged Access</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-section-label">Configuration</div>
+  <ul class="nav nav-pills flex-column gap-1">
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint == 'admin.policy' %}active{% endif %}" href="{{ url_for('admin.policy') }}">
+        <i class="bi bi-sliders"></i><span>Risk Policy</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint == 'admin.reports' %}active{% endif %}" href="{{ url_for('admin.reports') }}">
+        <i class="bi bi-file-earmark-bar-graph"></i><span>Compliance Reports</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint == 'admin.audit_log' %}active{% endif %}" href="{{ url_for('admin.audit_log') }}">
+        <i class="bi bi-journal-check"></i><span>Audit Log</span>
+      </a>
+    </li>
+  </ul>
+
+  {% if current_user.is_authenticated and current_user.is_super_admin %}
+  <div class="sidebar-section-label">Platform Admin</div>
+  <ul class="nav nav-pills flex-column gap-1">
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">
+        <i class="bi bi-gear"></i><span>System Settings</span>
+      </a>
+    </li>
+  </ul>
+  {% endif %}
+
+  <div class="mt-auto pt-3 border-top border-light border-opacity-25">
+    {% if current_user.is_authenticated %}
+    <div class="small text-white-50 text-truncate">{{ current_user.email[:3] }}***</div>
+    <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+      <span class="badge bg-{{ current_user.get_role_badge_color() }}">{{ current_user.get_role_display() }}</span>
+      <a class="small text-white" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+    {% else %}
+    <a class="btn btn-outline-light btn-sm w-100" href="{{ url_for('auth.login') }}">Login</a>
+    {% endif %}
+  </div>
+</nav>

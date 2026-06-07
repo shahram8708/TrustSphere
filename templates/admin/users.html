@@ -1,0 +1,140 @@
+{% extends "base_admin.html" %}
+{% from "partials/_risk_badge.html" import risk_badge %}
+
+{% block title %}User Risk Profiles{% endblock %}
+{% block page_title %}User Risk Profiles{% endblock %}
+
+{% block admin_content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ user_stats.total }}</span>
+      <span class="ts-stat-label">Total Users</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ user_stats.high_risk }}</span>
+      <span class="ts-stat-label">High Risk</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ user_stats.suspended }}</span>
+      <span class="ts-stat-label">Suspended</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ts-stat-card h-100">
+      <span class="ts-stat-number">{{ user_stats.active_today }}</span>
+      <span class="ts-stat-label">Active Today</span>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between gap-3">
+    <div class="fw-semibold"><i class="bi bi-funnel me-2"></i>Filters</div>
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#ts-user-filter-panel" aria-expanded="true" aria-controls="ts-user-filter-panel">Toggle</button>
+  </div>
+  <div class="collapse show" id="ts-user-filter-panel">
+    <div class="card-body">
+      <form method="get" action="{{ url_for('admin.users') }}">
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-3">
+            <label class="form-label small fw-semibold" for="search">{{ filter_form.search.label.text }}</label>
+            {{ filter_form.search(class="form-control", id="search", value=search, placeholder="Search user") }}
+          </div>
+          <div class="col-md-4 col-lg-2">
+            <label class="form-label small fw-semibold" for="user_type">{{ filter_form.user_type.label.text }}</label>
+            {{ filter_form.user_type(class="form-select", id="user_type") }}
+          </div>
+          <div class="col-md-4 col-lg-2">
+            <label class="form-label small fw-semibold">Risk Range</label>
+            <div class="input-group">
+              <input class="form-control" type="number" min="0" max="100" name="risk_min" value="{{ risk_min }}">
+              <span class="input-group-text">to</span>
+              <input class="form-control" type="number" min="0" max="100" name="risk_max" value="{{ risk_max }}">
+            </div>
+          </div>
+          <div class="col-md-4 col-lg-2">
+            <label class="form-label small fw-semibold" for="is_suspended">{{ filter_form.is_suspended.label.text }}</label>
+            {{ filter_form.is_suspended(class="form-select", id="is_suspended") }}
+          </div>
+          <div class="col-lg-3 d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Apply</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('admin.users') }}">Clear</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="fw-semibold"><i class="bi bi-people me-2"></i>Users</div>
+    <div class="small text-muted">Sorted by {{ sort_by|replace("_", " ")|title }} {{ sort_dir|upper }}</div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 ts-admin-table">
+      <thead>
+        <tr>
+          <th scope="col">User ID</th>
+          <th scope="col">Type</th>
+          <th scope="col">Display Name</th>
+          <th scope="col">Risk Score</th>
+          <th scope="col">Open Alerts</th>
+          <th scope="col">Devices</th>
+          <th scope="col">Last Active</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr class="{% if user.risk_score_current > 80 or user.is_suspended %}table-danger bg-opacity-25{% endif %}">
+          <td><span class="ts-masked-id">{{ user.get_masked_id() }}</span></td>
+          <td>{{ user.get_user_type_badge() }}</td>
+          <td>{% if user.display_name %}{{ user.display_name }}{% else %}<span class="text-muted">Protected</span>{% endif %}</td>
+          <td>{{ risk_badge(user.risk_score_current, show_bar=True) }}</td>
+          <td>
+            {% set count = alert_counts.get(user.id, 0) %}
+            {% if count > 0 %}
+            <span class="badge text-bg-danger">{{ count }}</span>
+            {% else %}
+            <span class="text-muted">0</span>
+            {% endif %}
+          </td>
+          <td>{{ device_counts.get(user.id, 0) }}</td>
+          <td>{% if user.last_active_at %}<span data-timestamp="{{ user.last_active_at.isoformat() }}">{{ user.last_active_at.strftime("%Y-%m-%d %H:%M") }}</span>{% else %}<span class="text-muted">Never</span>{% endif %}</td>
+          <td>{% if user.is_suspended %}<span class="badge text-bg-danger">Suspended</span>{% else %}<span class="badge text-bg-success">Active</span>{% endif %}</td>
+          <td>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-sm btn-primary" href="{{ url_for('admin.user_detail', user_id=user.id) }}">View Profile</a>
+              <form method="post" action="{{ url_for('admin.user_action', user_id=user.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="{% if user.is_suspended %}unsuspend{% else %}suspend{% endif %}">
+                <input type="hidden" name="reason" value="Actioned from user list">
+                <button class="btn btn-sm {% if user.is_suspended %}btn-outline-success{% else %}btn-outline-danger{% endif %}" type="submit">
+                  {% if user.is_suspended %}Unsuspend{% else %}Suspend{% endif %}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9">
+            <div class="ts-empty-state"><i class="bi bi-person-check"></i><span>No users match these filters.</span></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    {% include "partials/_pagination.html" %}
+  </div>
+</div>
+{% endblock %}

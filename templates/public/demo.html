@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "macros/form_macros.html" import render_field, render_checkbox %}
+
+{% block title %}Request Demo{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Schedule a TrustSphere demo for banking identity risk, compliance, and security operations workflows.">
+<meta property="og:title" content="Request a TrustSphere Demo">
+<meta property="og:description" content="See continuous identity trust for banking in action.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<main class="py-5 bg-light">
+  <div class="container py-4">
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="ts-card mb-4">
+          <h1 class="h2">What to Expect</h1>
+          <ol class="list-group list-group-numbered list-group-flush">
+            <li class="list-group-item px-0 bg-transparent">Live platform walkthrough across public, admin, and security operations flows.</li>
+            <li class="list-group-item px-0 bg-transparent">Risk Engine demonstration with sample banking scenarios.</li>
+            <li class="list-group-item px-0 bg-transparent">Custom integration planning for your channels and identity systems.</li>
+            <li class="list-group-item px-0 bg-transparent">Compliance mapping for your regulatory context.</li>
+          </ol>
+        </div>
+        <div class="ts-card">
+          <h2 class="h5">Trusted by security leaders evaluating modern banking risk</h2>
+          <p class="text-muted">Our solutions team can review your current fraud, IAM, KYC, and SOC architecture and recommend a phased TrustSphere deployment path.</p>
+          <div class="small"><i class="bi bi-envelope text-info me-2"></i>contact@trustsphere.io</div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card shadow-sm">
+          <div class="card-body p-4">
+            <h2 class="h3">Schedule Your TrustSphere Demo</h2>
+            <p class="text-muted">A solutions engineer will contact you within 4 business hours.</p>
+            <form method="post" novalidate>
+              {{ form.hidden_tag() }}
+              {{ render_field(form.company_name) }}
+              {{ render_field(form.contact_name) }}
+              {{ render_field(form.email) }}
+              {{ render_field(form.phone) }}
+              {{ render_field(form.bank_size) }}
+              {{ render_field(form.current_solution) }}
+              {{ render_field(form.primary_challenge) }}
+              {{ render_field(form.message) }}
+              {{ render_checkbox(form.agree_contact) }}
+              <button type="submit" class="btn btn-warning w-100">Request My Demo</button>
+            </form>
+            <p class="small text-muted text-center mt-3 mb-0">No commitment required. Completely free.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

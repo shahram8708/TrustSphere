@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing{% endblock %}
+
+{% block meta %}
+<meta name="description" content="TrustSphere SaaS pricing for banks, fintech teams, and enterprise financial institutions.">
+<meta property="og:title" content="TrustSphere Pricing">
+<meta property="og:description" content="Transparent identity trust pricing for financial institutions.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="rgb(11, 31, 78)">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<main>
+  <section class="py-5 bg-white">
+    <div class="container py-5 text-center">
+      <h1 class="display-5 fw-bold">Simple, Transparent Pricing</h1>
+      <p class="lead text-muted">SaaS licensing for banks that need continuous identity risk intelligence, compliance evidence, and scalable API protection.</p>
+    </div>
+  </section>
+
+  <section class="pb-5 bg-white">
+    <div class="container">
+      <div class="row g-4">
+        {% for tier in tiers %}
+        <div class="col-md-4">
+          <article class="card h-100 shadow-sm position-relative {% if tier.highlight %}border-warning{% endif %}">
+            {% if tier.highlight %}
+            <span class="position-absolute top-0 end-0 translate-middle-y badge text-bg-warning me-3">Most Popular</span>
+            {% endif %}
+            <div class="card-body p-4">
+              <h2 class="h3">{{ tier.name }}</h2>
+              <p class="text-muted">{{ tier.target }}</p>
+              <div class="display-5 fw-bold my-3">{% if tier.currency %}{{ tier.currency }}{% endif %}{{ tier.monthly_price }}</div>
+              <small class="text-muted">per month, billed annually</small>
+              <ul class="list-unstyled d-grid gap-2 my-4">
+                {% for feature in tier.features %}
+                <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ feature }}</li>
+                {% endfor %}
+                {% if tier.name == 'Starter' %}
+                <li class="text-muted"><i class="bi bi-x-circle me-2"></i>Behavioural Biometrics</li>
+                <li class="text-muted"><i class="bi bi-x-circle me-2"></i>PAM Module</li>
+                {% elif tier.name == 'Growth' %}
+                <li class="text-muted"><i class="bi bi-x-circle me-2"></i>White Label Portal</li>
+                {% endif %}
+              </ul>
+              <a class="btn {% if tier.highlight %}btn-warning{% else %}btn-primary{% endif %} w-100" href="{{ url_for('public.contact') }}">{{ tier.cta }}</a>
+            </div>
+          </article>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-light">
+    <div class="container">
+      <h2 class="h1 text-center mb-4">Feature Comparison</h2>
+      <div class="table-responsive">
+        <table class="table table-bordered bg-white align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th>Feature</th>
+              <th>Starter</th>
+              <th>Growth</th>
+              <th>Enterprise</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set rows = [
+              ('Users/Sessions', 'Up to 50K users', 'Up to 500K users', 'Unlimited'),
+              ('CRE Risk Engine', 'Included', 'Included', 'Included'),
+              ('Device Intelligence', 'Included', 'Included', 'Included'),
+              ('Behavioural Biometrics', 'Not included', 'Included', 'Included'),
+              ('KYC Onboarding Scoring', 'Not included', 'Included', 'Included'),
+              ('PAM Module', 'Not included', 'Add on', 'Included'),
+              ('Custom Risk Policy', 'Basic', 'Advanced', 'Custom'),
+              ('Compliance Reporting', 'Basic', 'Advanced', 'Custom'),
+              ('API Access', 'Limited', 'Included', 'Included'),
+              ('White Label Portal', 'Not included', 'Not included', 'Included'),
+              ('ML Model Training', 'Not included', 'Add on', 'Included'),
+              ('Video KYC Integration', 'Not included', 'Add on', 'Included'),
+              ('SLA', '99.5 percent', '99.9 percent', '99.99 percent'),
+              ('Support', 'Email', 'Priority', 'Dedicated')
+            ] %}
+            {% for row in rows %}
+            <tr>
+              <th>{{ row[0] }}</th>
+              {% for value in row[1:] %}
+              <td>
+                {% if value == 'Included' %}
+                <i class="bi bi-check-circle-fill text-success me-1"></i>{{ value }}
+                {% elif value == 'Not included' %}
+                <i class="bi bi-x-circle text-muted me-1"></i>{{ value }}
+                {% else %}
+                {{ value }}
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info mt-4">
+        <strong>Usage Based API Billing:</strong> Growth tier risk API calls are billed at $0.0008 per call, Enterprise calls at $0.0004 per call, and KYC assessments at $0.40 per application.
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-white">
+    <div class="container">
+      <h2 class="h1 text-center mb-4">Add On Modules</h2>
+      <div class="row g-4">
+        {% for addon in addons %}
+        <div class="col-md-6 col-lg-4">
+          <article class="ts-card h-100">
+            <h3 class="h5">{{ addon.name }}</h3>
+            <div class="fw-bold text-info mb-2">{{ addon.price_display }}</div>
+            <p class="text-muted mb-0">{{ addon.description }}</p>
+          </article>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="card mt-5 text-white border-0" style="background: var(--ts-secondary);">
+        <div class="card-body p-4 p-lg-5">
+          <h2 class="h3 text-white">Academic & Research License</h2>
+          <p>Approved institutions receive free sandbox access for research, teaching, and non commercial experimentation.</p>
+          <div class="d-flex flex-wrap gap-2 mb-4">
+            <span class="badge text-bg-light">Sandbox access</span>
+            <span class="badge text-bg-light">Anonymised datasets</span>
+            <span class="badge text-bg-light">Co branding</span>
+          </div>
+          <a class="btn btn-warning" href="{{ url_for('public.contact') }}">Apply for Academic License</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5 bg-light">
+    <div class="container">
+      <h2 class="h1 text-center mb-4">Pricing FAQ</h2>
+      <div class="accordion" id="pricingFaq">
+        {% for question, answer in faqs %}
+        <div class="accordion-item">
+          <h3 class="accordion-header">
+            <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#faq{{ loop.index }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="faq{{ loop.index }}">
+              {{ question }}
+            </button>
+          </h3>
+          <div id="faq{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#pricingFaq">
+            <div class="accordion-body text-muted">{{ answer }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
