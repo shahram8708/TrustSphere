@@ -347,8 +347,7 @@ TrustSphere-main/
 ├── celery_worker.py             # Celery worker and Beat entry point
 ├── generate_icons.py            # PWA icon generator using Pillow
 ├── requirements.txt             # All Python dependencies
-├── run.py                       # Development server with auto-seed and PWA icon generation
-├── seed.py                      # Full database seeder with realistic demo data
+├── run.py                       # Development server and PWA icon generation
 └── wsgi.py                      # Production WSGI entry point for Gunicorn
 ```
 
@@ -440,7 +439,7 @@ docker run -p 6379:6379 redis:7-alpine
 python run.py
 ```
 
-This command creates all database tables, seeds the development database with demo institutions, users, alerts, and sessions, and starts the Flask development server at `http://localhost:5000`.
+This command creates all database tables, users, alerts, and sessions, and starts the Flask development server at `http://localhost:5000`.
 
 The default admin login is printed to the console at startup. By default it is:
 
@@ -485,9 +484,9 @@ All environment variables are defined in `.env.example`. Copy it to `.env` and c
 | `JWT_SECRET_KEY` | Secret for signing JWT access tokens | `another-secret-key` |
 | `FLASK_ENV` | Flask runtime environment (`development` or `production`) | `development` |
 | `GEOIP_ENABLED` | Enable MaxMind GeoIP lookups | `False` |
-| `DEFAULT_INSTITUTION_NAME` | Display name of the seeded demo institution | `TrustSphere Demo Bank` |
-| `DEFAULT_ADMIN_EMAIL` | Login email for the seeded platform admin | `admin@trustsphere.com` |
-| `DEFAULT_ADMIN_PASSWORD` | Login password for the seeded platform admin | `Admin@TrustSphere2026` |
+| `DEFAULT_INSTITUTION_NAME` | Display name of the demo institution | `TrustSphere Demo Bank` |
+| `DEFAULT_ADMIN_EMAIL` | Login email for the platform admin | `admin@trustsphere.com` |
+| `DEFAULT_ADMIN_PASSWORD` | Login password for the platform admin | `Admin@TrustSphere2026` |
 
 ### Running the Project
 
@@ -497,7 +496,7 @@ All environment variables are defined in `.env.example`. Copy it to `.env` and c
 python run.py
 ```
 
-The Flask development server starts at `http://localhost:5000` with auto-reload disabled (`use_reloader=False`) to prevent double-seeding.
+The Flask development server starts at `http://localhost:5000` with auto-reload disabled (`use_reloader=False`).
 
 **Production mode with Gunicorn**
 
@@ -530,14 +529,6 @@ flask db migrate -m "your migration message"
 flask db upgrade
 ```
 
-**Re-seed the development database**
-
-The seeder runs automatically on first start. To re-seed manually after clearing the database:
-
-```bash
-python -c "from app import create_app; from seed import seed_database; app = create_app(); app.app_context().push(); seed_database()"
-```
-
 ---
 
 ## Usage
@@ -558,7 +549,7 @@ From the admin panel you can:
 
 ### Customer Security Portal
 
-End users access the portal at `http://localhost:5000/portal/dashboard` after logging in with their customer credentials (seeded demo users are available after running `seed.py`). The portal shows their current risk score, recent session activity, registered devices, and security alerts. They can rename devices, remove old devices, adjust notification preferences, and initiate account recovery.
+End users access the portal at `http://localhost:5000/portal/dashboard` after logging in with their customer credentials. The portal shows their current risk score, recent session activity, registered devices, and security alerts. They can rename devices, remove old devices, adjust notification preferences, and initiate account recovery.
 
 ### REST API
 
