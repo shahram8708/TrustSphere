@@ -9,6 +9,8 @@ import hashlib
 import io
 import json
 import uuid
+import secrets
+import string
 
 from flask import Blueprint, Response, current_app, flash, jsonify, redirect, render_template, request, session as flask_session, url_for
 from flask_login import current_user
@@ -23,6 +25,8 @@ from app.forms import (
     ReportForm,
     SessionFilterForm,
     SettingsForm,
+    SingleUserCreateForm,
+    BulkUserUploadForm,
     UserActionForm,
     UserFilterForm,
 )
@@ -46,7 +50,7 @@ from app.services.notification import NotificationService
 from app.services.pam_monitor import PrivilegedAccessMonitor
 from app.services.report_generator import ComplianceReportGenerator
 from app.tasks.report_cache import get_report, list_recent_reports, set_report
-from app.utils.decorators import admin_required, super_admin_required
+from app.utils.decorators import admin_required, super_admin_required, role_required
 from app.utils.pagination import get_page_from_request, paginate_query
 from app.utils.response import error_response, success_response
 
@@ -202,6 +206,12 @@ def _mask_ip(ip_address):
         return "***"
     digest = hashlib.sha256(ip_address.encode("utf-8")).hexdigest()
     return f"ip:{digest[:10]}"
+
+
+def _generate_password(length=12):
+    """Generate a secure alphanumeric password for new users."""
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def _country_flag(country_code):
@@ -594,6 +604,185 @@ def alert_detail(alert_id):
         event_display=_event_display,
         risk_color=_risk_color,
     )
+
+
+@admin_bp.route("/users/new", methods=["GET", "POST"])
+@admin_required
+@role_required("it_admin")
+def users_create():
+    """Create a single user; only IT admins or super admins may access."""
+    inst_filter = get_institution_filter()
+    form = SingleUserCreateForm()
+
+    # Populate institution choices for super admins, otherwise lock to current institution
+    if getattr(current_user, "is_super_admin", False):
+        institutions = Institution.query.order_by(Institution.name.asc()).all()
+        form.institution_id.choices = [("", "Select Institution...")] + [(i.id, i.name) for i in institutions]
+    else:
+        form.institution_id.choices = [(current_user.institution_id, getattr(current_user, "institution", None) and current_user.institution.name)]
+        form.institution_id.data = current_user.institution_id
+
+    if form.validate_on_submit():
+        email = (form.email.data or "").strip().lower()
+        if not email:
+            flash("Email is required.", "error")
+            return redirect(url_for("admin.users_create"))
+
+        if getattr(current_user, "is_super_admin", False):
+            institution_id = form.institution_id.data or None
+            if not institution_id:
+                flash("Select an institution for the new user.", "error")
+                return redirect(url_for("admin.users_create"))
+        else:
+            institution_id = current_user.institution_id
+
+        exists = User.query.filter(User.email == email, User.institution_id == institution_id).first()
+        if exists:
+            flash("A user with that email already exists in the selected institution.", "error")
+            return redirect(url_for("admin.users_create"))
+
+        user = User(
+            email=email,
+            display_name=(form.display_name.data or "").strip() or None,
+            external_user_id=(form.external_user_id.data or "").strip() or None,
+            phone=(form.phone.data or "").strip() or None,
+            user_type=form.user_type.data,
+            institution_id=institution_id,
+        )
+
+        password = _generate_password(12)
+        user.set_password(password)
+
+        db.session.add(user)
+        AuditLogger.log_from_request(current_user, "user.create", "user", None, {"email": email, "user_type": user.user_type}, commit=False)
+        try:
+            db.session.commit()
+            # Queue credentials email via Celery task
+            try:
+                from app.tasks.email_tasks import send_account_created_email_task
+
+                send_account_created_email_task.delay(user.id, password)
+            except Exception:
+                # Fall back to synchronous send if task import fails
+                subject = "Your new TrustSphere account"
+                body = NotificationService.build_email_html(
+                    title="Your TrustSphere account has been created",
+                    body_paragraphs=[
+                        f"An account was created for you as a {user.user_type}.",
+                        f"Email: {user.email}",
+                        f"Temporary password: {password}",
+                    ],
+                    footer_note="Please change your password after first login.",
+                )
+                NotificationService.send_email(user.email, subject, body)
+
+            flash("User created; credentials will be emailed.", "success")
+            return redirect(url_for("admin.user_detail", user_id=user.id))
+        except Exception as exc:
+            db.session.rollback()
+            flash("Failed to create user.", "error")
+            return redirect(url_for("admin.users"))
+
+    return render_template("admin/users_create.html", form=form)
+
+
+@admin_bp.route("/users/bulk", methods=["GET", "POST"])
+@admin_required
+@role_required("it_admin")
+def users_bulk_create():
+    """Upload a CSV to create multiple users in bulk. CSV should include: email,display_name,external_user_id,phone,user_type[,institution_id]"""
+    form = BulkUserUploadForm()
+    if form.validate_on_submit():
+        uploaded = form.csv_file.data
+        data = uploaded.read()
+        try:
+            text = data.decode("utf-8")
+        except Exception:
+            try:
+                text = data.decode("latin-1")
+            except Exception:
+                flash("Uploaded file must be a UTF-8 CSV.", "error")
+                return redirect(url_for("admin.users_bulk_create"))
+
+        reader = csv.DictReader(io.StringIO(text))
+        created = 0
+        failures = []
+        created_users = []
+        for idx, row in enumerate(reader, start=1):
+            email = (row.get("email") or "").strip().lower()
+            if not email:
+                failures.append((idx, "missing email"))
+                continue
+
+            # Determine institution for row: prefer CSV value for super admins, otherwise use current user's institution
+            institution_id = current_user.institution_id
+            if getattr(current_user, "is_super_admin", False):
+                inst_val = (row.get("institution_id") or "").strip()
+                if inst_val:
+                    institution_id = inst_val
+
+            user_type = (row.get("user_type") or form.default_user_type.data or "customer").strip().lower()
+            if user_type not in {"customer", "employee"}:
+                user_type = "customer"
+
+            exists = User.query.filter(User.email == email, User.institution_id == institution_id).first()
+            if exists:
+                failures.append((idx, "already exists"))
+                continue
+
+            user = User(
+                email=email,
+                display_name=(row.get("display_name") or "").strip() or None,
+                external_user_id=(row.get("external_user_id") or "").strip() or None,
+                phone=(row.get("phone") or "").strip() or None,
+                user_type=user_type,
+                institution_id=institution_id,
+            )
+            password = _generate_password(12)
+            user.set_password(password)
+            db.session.add(user)
+            created += 1
+            created_users.append((user, password))
+
+        # Commit created users
+        try:
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            flash("Failed to create users; database error.", "error")
+            return redirect(url_for("admin.users"))
+
+        # Queue email send tasks for created users
+        queued = 0
+        for user, password in created_users:
+            try:
+                from app.tasks.email_tasks import send_account_created_email_task
+
+                send_account_created_email_task.delay(user.id, password)
+                queued += 1
+            except Exception:
+                # If task unavailable, attempt best-effort synchronous send
+                try:
+                    subject = "Your new TrustSphere account"
+                    body = NotificationService.build_email_html(
+                        title="Your TrustSphere account has been created",
+                        body_paragraphs=[
+                            f"An account was created for you as a {user.user_type}.",
+                            f"Email: {user.email}",
+                            f"Temporary password: {password}",
+                        ],
+                        footer_note="Please change your password after first login.",
+                    )
+                    NotificationService.send_email(user.email, subject, body)
+                    queued += 1
+                except Exception:
+                    continue
+
+        AuditLogger.log_from_request(current_user, "user.bulk_create", "user", None, {"created": created, "failed": len(failures)}, commit=False)
+        flash(f"Created {created} users; queued {queued} emails. Failures: {len(failures)}.", "success" if created else "warning")
+        return redirect(url_for("admin.users"))
+
+    return render_template("admin/users_bulk.html", form=form)
 
 
 @admin_bp.post("/alerts/<alert_id>/action")

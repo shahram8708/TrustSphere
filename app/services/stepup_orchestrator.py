@@ -15,7 +15,7 @@ class StepUpOrchestrator:
     METHOD_DESCRIPTIONS = {
         "push_notification": "A verification request has been sent to your registered mobile device.",
         "biometric": "Please authenticate using your device biometric.",
-        "otp": "A one time password has been sent to your registered mobile number.",
+        "otp": "A verification code has been sent to your registered email address.",
         "video_kyc": "A video verification call will be initiated. Please keep your government ID ready.",
         "agent_call": "A TrustSphere security agent will call you on your registered number within 5 minutes.",
     }

@@ -27,6 +27,13 @@
         <i class="bi bi-people"></i><span>User Risk Profiles</span>
       </a>
     </li>
+    {% if current_user.is_authenticated and current_user.has_permission('manage_users') %}
+    <li class="nav-item">
+      <a class="nav-link {% if endpoint in ['admin.users_create', 'admin.users_bulk_create'] %}active{% endif %}" href="{{ url_for('admin.users_create') }}">
+        <i class="bi bi-person-plus"></i><span>Create Users</span>
+      </a>
+    </li>
+    {% endif %}
     <li class="nav-item">
       <a class="nav-link {% if endpoint == 'admin.sessions' %}active{% endif %}" href="{{ url_for('admin.sessions') }}">
         <i class="bi bi-activity"></i><span>Session Monitor</span>

@@ -150,14 +150,14 @@ class AuditLogger:
         )
 
     @classmethod
-    def log_password_reset_complete(cls, admin_user_id, request_obj):
+    def log_password_reset_complete(cls, target_type, target_id, request_obj):
         return cls.log(
             actor_type="system",
             actor_id=None,
             actor_email=None,
             action="password_reset.complete",
-            target_type="AdminUser",
-            target_id=admin_user_id,
+            target_type=target_type,
+            target_id=target_id,
             ip_address=get_client_ip(request_obj),
             user_agent=request_obj.headers.get("User-Agent", ""),
         )

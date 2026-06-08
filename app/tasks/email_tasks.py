@@ -30,31 +30,69 @@ def _ensure_sent(ok, message):
     max_retries=3,
     default_retry_delay=60,
 )
-def send_password_reset_email_task(self, admin_user_id, reset_token):
-    """Send a password reset email to an active admin user."""
+def send_password_reset_email_task(self, user_type, user_id, reset_token):
+    """Send a password reset email to an active admin or portal user.
+
+    Arguments:
+        user_type: 'admin' or 'user'
+        user_id: id of the user
+        reset_token: token to include in the email
+    """
     try:
         with flask_task_context():
-            from app.models import AdminUser
             from app.services.audit import AuditLogger
             from app.services.notification import NotificationService
 
-            admin_user = AdminUser.query.get(admin_user_id)
-            if not admin_user:
-                print(
-                    f"[TrustSphere Task] password reset skipped, admin user not found: {admin_user_id}",
-                    file=sys.stderr,
-                )
-                return False
-            if not admin_user.is_active:
+            institution_id = None
+            target_type = None
+            target_id = None
+
+            if user_type == "admin":
+                from app.models import AdminUser
+
+                admin_user = AdminUser.query.get(user_id)
+                if not admin_user:
+                    print(
+                        f"[TrustSphere Task] password reset skipped, admin user not found: {user_id}",
+                        file=sys.stderr,
+                    )
+                    return False
+                if not admin_user.is_active:
+                    return False
+
+                ok, message = NotificationService.send_password_reset_email("admin", admin_user.id, reset_token)
+                institution_id = admin_user.institution_id
+                target_type = "AdminUser"
+                target_id = admin_user.id
+            elif user_type == "user":
+                from app.models import User
+
+                portal_user = User.query.get(user_id)
+                if not portal_user:
+                    print(
+                        f"[TrustSphere Task] password reset skipped, portal user not found: {user_id}",
+                        file=sys.stderr,
+                    )
+                    return False
+                if not portal_user.is_active:
+                    return False
+
+                ok, message = NotificationService.send_password_reset_email("user", portal_user.id, reset_token)
+                institution_id = portal_user.institution_id
+                target_type = "User"
+                target_id = portal_user.id
+            else:
+                print(f"[TrustSphere Task] password reset skipped, unknown user type: {user_type}", file=sys.stderr)
                 return False
 
-            ok, message = NotificationService.send_password_reset_email(admin_user_id, reset_token)
             _ensure_sent(ok, message)
             AuditLogger.log(
                 actor_type="system",
-                actor_id=admin_user_id,
+                actor_id=None,
                 action="email.password_reset_sent",
-                institution_id=admin_user.institution_id,
+                institution_id=institution_id,
+                target_type=target_type,
+                target_id=target_id,
             )
             return True
     except SMTPException as exc:
@@ -149,6 +187,57 @@ def send_alert_notification_email_task(self, alert_id):
     except Exception as exc:
         rollback_session()
         return _retry_or_return(self, "email.alert_notification", exc)
+@celery.task(
+    bind=True,
+    name="trustsphere.tasks.email.account_created",
+    max_retries=3,
+    default_retry_delay=60,
+)
+def send_account_created_email_task(self, user_id, temp_password):
+    """Send account credentials to a newly created user (customer/employee)."""
+    try:
+        with flask_task_context():
+            from app.models import User
+            from app.services.audit import AuditLogger
+            from app.services.notification import NotificationService
+
+            user = User.query.get(user_id)
+            if not user:
+                print(
+                    f"[TrustSphere Task] account email skipped, user not found: {user_id}",
+                    file=sys.stderr,
+                )
+                return False
+
+            subject = "Your new TrustSphere account"
+            body = NotificationService.build_email_html(
+                title="Your TrustSphere account has been created",
+                body_paragraphs=[
+                    f"An account was created for you as a {user.user_type}.",
+                    f"Email: {user.email}",
+                    f"Temporary password: {temp_password}",
+                ],
+                footer_note="Please change your password after first login.",
+            )
+            ok, message = NotificationService.send_email(user.email, subject, body)
+            _ensure_sent(ok, message)
+            AuditLogger.log(
+                actor_type="system",
+                actor_id=None,
+                action="email.account_created_sent",
+                institution_id=user.institution_id,
+                target_type="user",
+                target_id=user.id,
+            )
+            return True
+    except SMTPException as exc:
+        return _retry_or_return(self, "email.account_created", exc)
+    except SQLAlchemyError as exc:
+        rollback_session()
+        return _retry_or_return(self, "email.account_created", exc)
+    except Exception as exc:
+        rollback_session()
+        return _retry_or_return(self, "email.account_created", exc)
 
 
 @celery.task(

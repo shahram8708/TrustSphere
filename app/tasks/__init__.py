@@ -23,6 +23,7 @@ from app.tasks.data_cleanup import (
 from app.tasks.device_analysis import analyse_new_device_task, device_trust_decay_task
 from app.tasks.email_tasks import (
     send_account_recovery_status_task,
+    send_account_created_email_task,
     send_alert_notification_email_task,
     send_all_weekly_digests_task,
     send_contact_form_notification_task,
@@ -85,6 +86,7 @@ __all__ = [
     "scheduled_daily_report_task",
     "scheduled_kyc_review_reminder_task",
     "send_account_recovery_status_task",
+    "send_account_created_email_task",
     "send_alert_notification_email_task",
     "send_all_weekly_digests_task",
     "send_contact_form_notification_task",

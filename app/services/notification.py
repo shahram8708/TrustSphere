@@ -80,27 +80,48 @@ class NotificationService:
             return False, str(exc)
 
     @classmethod
-    def send_password_reset_email(cls, admin_user_id, reset_token):
-        """Send an admin password reset email."""
-        try:
-            from app.models import AdminUser
+    def send_password_reset_email(cls, user_type, user_id, reset_token):
+        """Send a password reset email for admin or portal users.
 
-            admin_user = AdminUser.query.get(admin_user_id)
-            if not admin_user:
-                return False, "Admin user not found"
+        user_type: "admin" or "user"
+        user_id: the primary key of the user record
+        """
+        try:
+            if user_type == "admin":
+                from app.models import AdminUser as _AdminUser
+
+                user = _AdminUser.query.get(user_id)
+            else:
+                from app.models import User as _User
+
+                user = _User.query.get(user_id)
+
+            if not user or not getattr(user, "email", None):
+                return False, "User not found or no email available"
+
             reset_url = url_for("auth.reset_password", token=reset_token, _external=True)
-            body = cls.build_email_html(
-                title="Password Reset Request",
-                body_paragraphs=[
+            # Use a generic, user-facing message for portal users and a slightly different
+            # message for administrators to reflect their elevated access.
+            if user_type == "admin":
+                paragraphs = [
                     "We received a request to reset your TrustSphere administrator password.",
                     "This link expires in 1 hour. If you did not request this, ignore this email and review your account activity.",
-                ],
+                ]
+            else:
+                paragraphs = [
+                    "We received a request to reset your TrustSphere account password.",
+                    "This link expires in 1 hour. If you did not request this, you can ignore this email.",
+                ]
+
+            body = cls.build_email_html(
+                title="Password Reset Request",
+                body_paragraphs=paragraphs,
                 cta_text="Reset Password",
                 cta_url=reset_url,
                 footer_note="Never share this link with anyone.",
             )
             return cls.send_email(
-                admin_user.email,
+                user.email,
                 "TrustSphere Password Reset Request",
                 body,
             )

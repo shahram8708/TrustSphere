@@ -121,8 +121,14 @@ class ContinuousRiskEngine:
                 policy,
             )
             normalized = max(0, min(100, int(normalized)))
+
+            # Preserve previously recorded user risk to avoid single-event drops.
+            # Use a conservative strategy: do not reduce stored risk on evaluation.
             risk_before = int(user.risk_score_current or 0)
-            category = cls.get_risk_category_for_score(normalized, user.institution_id)
+            risk_after = max(risk_before, normalized)
+
+            # Compute category/action based on the final effective risk used by the platform.
+            category = cls.get_risk_category_for_score(risk_after, user.institution_id)
             action = cls._recommended_action(category, event_type)
 
             session = SessionRecord.query.get(session_id) if session_id else None
@@ -141,8 +147,8 @@ class ContinuousRiskEngine:
                     ip_city=context_dict.get("ip_city"),
                     channel=context_dict.get("channel", "api"),
                     risk_score_initial=risk_before,
-                    risk_score_peak=normalized,
-                    risk_score_final=normalized,
+                    risk_score_peak=risk_after,
+                    risk_score_final=risk_after,
                     stepup_triggered=action == "stepup",
                     stepup_outcome="pending" if action == "stepup" else "none",
                 )
@@ -150,8 +156,8 @@ class ContinuousRiskEngine:
                 db.session.flush()
                 session_id = session.id
             else:
-                session.risk_score_peak = max(session.risk_score_peak or 0, normalized)
-                session.risk_score_final = normalized
+                session.risk_score_peak = max(session.risk_score_peak or 0, risk_after)
+                session.risk_score_final = risk_after
                 if action == "stepup":
                     session.stepup_triggered = True
                     session.stepup_outcome = "pending"
@@ -165,15 +171,18 @@ class ContinuousRiskEngine:
                 institution_id=institution_id or user.institution_id,
                 event_type=event_type,
                 risk_score_before=risk_before,
-                risk_score_after=normalized,
+                risk_score_after=risk_after,
                 contributing_factors=json.dumps(factors, sort_keys=True),
                 cre_response_action=action,
                 event_metadata=json.dumps(context_dict, sort_keys=True, default=str),
                 evaluated_at=datetime.utcnow(),
                 processing_ms=processing_ms,
             )
-            user.risk_score_current = normalized
-            user.risk_score_updated_at = datetime.utcnow()
+
+            # Only update the stored user risk when it increases (avoid single-event drops).
+            if risk_after > risk_before:
+                user.risk_score_current = risk_after
+                user.risk_score_updated_at = datetime.utcnow()
             user.last_active_at = datetime.utcnow()
 
             db.session.add(risk_event)
@@ -188,11 +197,11 @@ class ContinuousRiskEngine:
                     user.id,
                     session_id,
                     event_type,
-                    normalized,
+                    risk_after,
                 )
 
             return CREResult(
-                risk_score=normalized,
+                risk_score=risk_after,
                 risk_category=category,
                 contributing_factors=factors,
                 recommended_action=action,

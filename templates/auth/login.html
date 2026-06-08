@@ -25,6 +25,7 @@
 
       <form id="loginForm" method="post" novalidate>
         {{ form.hidden_tag() }}
+        <input type="hidden" name="next" value="{{ request.args.get('next') or '' }}">
         <input type="hidden" name="geo_lat" id="geo_lat" value="">
         <input type="hidden" name="geo_lng" id="geo_lng" value="">
         <div class="mb-3">

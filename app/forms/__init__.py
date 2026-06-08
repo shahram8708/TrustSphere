@@ -13,6 +13,8 @@ from app.forms.admin_forms import (
     ReportForm,
     SessionFilterForm,
     SettingsForm,
+    SingleUserCreateForm,
+    BulkUserUploadForm,
     UserActionForm,
     UserFilterForm,
 )
@@ -41,6 +43,8 @@ __all__ = [
     "ResetPasswordForm",
     "SessionFilterForm",
     "SettingsForm",
+    "SingleUserCreateForm",
+    "BulkUserUploadForm",
     "UserActionForm",
     "UserFilterForm",
 ]

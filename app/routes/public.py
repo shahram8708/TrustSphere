@@ -19,6 +19,7 @@ from werkzeug.exceptions import NotFound
 
 from app.forms import ContactForm, DemoRequestForm
 from app.services import AuditLogger
+from app.extensions import limiter
 
 
 public_bp = Blueprint("public", __name__)
@@ -444,6 +445,7 @@ def api_docs():
 
 
 @public_bp.get("/sw.js")
+@limiter.exempt
 def serve_sw():
     fallback_body = (
         "// TrustSphere Service Worker\n"

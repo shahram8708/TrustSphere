@@ -658,6 +658,12 @@ def recovery_initiate():
         flask_session["recovery_challenge_id"] = challenge_data.get("challenge_id") if challenge_data else None
         flask_session["recovery_risk_score"] = risk_score
         flask_session["recovery_reason"] = form.recovery_reason.data
+        # Preserve optional next redirect (ensure it's a local path)
+        next_url = request.args.get("next")
+        if next_url and isinstance(next_url, str) and next_url.startswith("/") and not next_url.startswith("//"):
+            flask_session["recovery_next"] = next_url
+        else:
+            flask_session["recovery_next"] = url_for("auth.login")
         AuditLogger.log(
             actor_type="customer",
             actor_id=user.id if user else None,
@@ -725,12 +731,14 @@ def recovery_verify():
                         "verified",
                         user.institution_id,
                     )
+                # Preserve redirect target before clearing recovery session keys
+                next_url = flask_session.get("recovery_next") or url_for("auth.login")
                 _clear_recovery_session()
                 flash(
-                    "Your identity has been verified. You can now reset your account access. Please contact your bank branch with this verification confirmation.",
+                    "Your identity has been verified. You can now reset your account access. Please follow the next steps.",
                     "success",
                 )
-                return redirect(url_for("auth.login"))
+                return redirect(next_url)
 
             flash("Incorrect verification code. Please try again.", "error")
 

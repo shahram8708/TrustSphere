@@ -11,7 +11,7 @@
       <h4 class="mt-2">Verify Your Identity</h4>
     </div>
     <div class="alert alert-info">{{ method_description }}</div>
-    <form method="post" action="{{ url_for('portal.recovery_verify') }}" id="ts-recovery-verify-form">
+    <form method="post" action="{{ action_url | default(url_for('portal.recovery_verify')) }}" id="ts-recovery-verify-form">
       {{ form.hidden_tag() }}
       {% if method == 'otp' %}
       <div class="mb-3">

@@ -1,0 +1,35 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Bulk Create Users{% endblock %}
+{% block page_title %}Bulk Create Users{% endblock %}
+
+{% block admin_content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="fw-semibold">Bulk Create Users</div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.users') }}">Back to Users</a>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.users_create') }}">Create Single</a>
+    </div>
+  </div>
+  <div class="card-body">
+    <p class="text-muted">Upload a CSV with the headers: <code>email,display_name,external_user_id,phone,user_type[,institution_id]</code>.</p>
+    <form method="post" enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">{{ form.csv_file.label.text }}</label>
+          {{ form.csv_file(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">{{ form.default_user_type.label.text }}</label>
+          {{ form.default_user_type(class="form-select") }}
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" type="submit">Upload</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

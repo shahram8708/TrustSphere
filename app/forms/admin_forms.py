@@ -14,6 +14,7 @@ from wtforms import (
     TextAreaField,
 )
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
+from flask_wtf.file import FileField, FileRequired
 
 
 class AlertActionForm(FlaskForm):
@@ -359,3 +360,34 @@ class SettingsForm(FlaskForm):
     )
     submit_settings = SubmitField("Save Platform Settings")
     submit_add_institution = SubmitField("Create Institution")
+
+
+class SingleUserCreateForm(FlaskForm):
+    """Form for IT admins to create a single end user (customer or employee)."""
+
+    email = StringField("Email", validators=[DataRequired(), Length(max=200)])
+    display_name = StringField("Display Name", validators=[Optional(), Length(max=200)])
+    external_user_id = StringField("External User ID", validators=[Optional(), Length(max=100)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=32)])
+    user_type = SelectField(
+        "User Type",
+        choices=[("customer", "Customer"), ("employee", "Employee")],
+        validators=[DataRequired()],
+    )
+    institution_id = SelectField("Institution", choices=[], validators=[Optional()])
+    submit = SubmitField("Create User")
+
+
+class BulkUserUploadForm(FlaskForm):
+    """Form for uploading CSV to create many users at once.
+
+    Expected CSV headers: email,display_name,external_user_id,phone,user_type
+    """
+
+    csv_file = FileField("CSV File (UTF-8)", validators=[FileRequired()])
+    default_user_type = SelectField(
+        "Default User Type",
+        choices=[("customer", "Customer"), ("employee", "Employee")],
+        validators=[Optional()],
+    )
+    submit_upload = SubmitField("Upload and Create Users")

@@ -1,6 +1,6 @@
 """End customer and employee identity model."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 
 from flask_login import UserMixin
@@ -33,6 +33,9 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256), nullable=True)
     risk_score_current = db.Column(db.Integer, default=25, nullable=False)
     risk_score_updated_at = db.Column(db.DateTime, nullable=True)
+    failed_login_count = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
+    post_lock_verification_required = db.Column(db.Boolean, default=False, nullable=False)
     is_suspended = db.Column(db.Boolean, default=False, nullable=False)
     config_json = db.Column(db.Text, nullable=True)
     behavioural_profile_id = db.Column(
@@ -99,6 +102,28 @@ class User(db.Model, UserMixin):
     def is_active(self):
         """Return true when the customer account is allowed to sign in."""
         return not bool(self.is_suspended)
+
+    @property
+    def is_locked(self):
+        """Return true when the account lock window is active."""
+        return self.locked_until is not None and self.locked_until > datetime.utcnow()
+
+    def lock_account(self, minutes=15):
+        """Lock the account for a period of time and require verification after expiry."""
+        self.locked_until = datetime.utcnow() + timedelta(minutes=minutes)
+        self.post_lock_verification_required = True
+
+    def unlock_account(self):
+        """Unlock the account and clear failures and post-lock verification requirement."""
+        self.locked_until = None
+        self.failed_login_count = 0
+        self.post_lock_verification_required = False
+
+    def increment_failed_login(self):
+        """Track a failed login and lock after repeated failures."""
+        self.failed_login_count = (self.failed_login_count or 0) + 1
+        if self.failed_login_count >= 5:
+            self.lock_account(15)
 
     def get_risk_category(self):
         """Return the risk category for the current risk score."""

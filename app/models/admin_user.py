@@ -66,6 +66,7 @@ class AdminUser(UserMixin, db.Model):
     login_ip_last = db.Column(db.String(45), nullable=True)
     failed_login_count = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime, nullable=True)
+    post_lock_verification_required = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     institution = db.relationship("Institution", back_populates="admin_users")
@@ -143,11 +144,21 @@ class AdminUser(UserMixin, db.Model):
     def lock_account(self, minutes=15):
         """Lock the account for a period of time."""
         self.locked_until = datetime.utcnow() + timedelta(minutes=minutes)
+        # Require verification after the lock period expires
+        try:
+            self.post_lock_verification_required = True
+        except Exception:
+            # Best-effort: if DB schema not migrated, avoid raising
+            pass
 
     def unlock_account(self):
         """Unlock the account and clear failures."""
         self.locked_until = None
         self.failed_login_count = 0
+        try:
+            self.post_lock_verification_required = False
+        except Exception:
+            pass
 
     def increment_failed_login(self):
         """Track a failed login and lock after repeated failures."""
