@@ -54,27 +54,27 @@ Everything in this repository is 100% open source. There are no paid APIs, no ex
 
 ## Key Features
 
-**Continuous Risk Engine (CRE)** — Evaluates six independent risk dimensions on every event and combines them into a single 0 to 100 score using weighted scoring with sigmoid normalization. The weights are configurable per institution through the policy builder.
+**Continuous Risk Engine (CRE)** - Evaluates six independent risk dimensions on every event and combines them into a single 0 to 100 score using weighted scoring with sigmoid normalization. The weights are configurable per institution through the policy builder.
 
-**Behavioural Biometrics** — A lightweight JavaScript SDK passively captures typing rhythm, inter-key intervals, dwell times, scroll velocity, click timing, field navigation entropy, and touch pressure. A 10-dimensional feature vector is sent server-side and compared against the user's learned baseline using cosine similarity and IsolationForest anomaly detection.
+**Behavioural Biometrics** - A lightweight JavaScript SDK passively captures typing rhythm, inter-key intervals, dwell times, scroll velocity, click timing, field navigation entropy, and touch pressure. A 10-dimensional feature vector is sent server-side and compared against the user's learned baseline using cosine similarity and IsolationForest anomaly detection.
 
-**Device Intelligence and Fingerprinting** — Multi-signal device fingerprinting uses canvas rendering, WebGL renderer metadata, screen geometry, and hardware concurrency to produce a stable SHA-256 device hash. Trust levels progress from new to known to trusted, and the engine flags emulators, rooted devices, and VMs automatically.
+**Device Intelligence and Fingerprinting** - Multi-signal device fingerprinting uses canvas rendering, WebGL renderer metadata, screen geometry, and hardware concurrency to produce a stable SHA-256 device hash. Trust levels progress from new to known to trusted, and the engine flags emulators, rooted devices, and VMs automatically.
 
-**KYC Onboarding Fraud Scoring** — Every onboarding application receives composite risk scoring across five factors: document authenticity, liveness detection, behavioural onboarding pattern, sanctions watchlist matching, and synthetic identity risk. The system auto-decides approve, manual review, or reject, with a full factor breakdown for compliance officers.
+**KYC Onboarding Fraud Scoring** - Every onboarding application receives composite risk scoring across five factors: document authenticity, liveness detection, behavioural onboarding pattern, sanctions watchlist matching, and synthetic identity risk. The system auto-decides approve, manual review, or reject, with a full factor breakdown for compliance officers.
 
-**Privileged Access Monitoring (PAM)** — Employee and admin sessions are tracked separately with anomaly flags for high action velocity, bulk record access, off-hours activity, large data exports, and critical system access. Insider threat alerts fire automatically when thresholds are crossed.
+**Privileged Access Monitoring (PAM)** - Employee and admin sessions are tracked separately with anomaly flags for high action velocity, bulk record access, off-hours activity, large data exports, and critical system access. Insider threat alerts fire automatically when thresholds are crossed.
 
-**Step-Up Authentication Orchestration** — When risk rises above a configurable threshold, TrustSphere selects the appropriate escalation method: push notification, OTP, biometric, video KYC, or agent call. The selection is policy-driven and channel-aware.
+**Step-Up Authentication Orchestration** - When risk rises above a configurable threshold, TrustSphere selects the appropriate escalation method: push notification, OTP, biometric, video KYC, or agent call. The selection is policy-driven and channel-aware.
 
-**ML-Powered Alert Prioritization** — Every alert carries an `ml_priority_score` between 0 and 1 computed by a LightGBM classifier trained on severity, recency, user risk history, and institutional context. Analysts see the most urgent cases first without manual sorting.
+**ML-Powered Alert Prioritization** - Every alert carries an `ml_priority_score` between 0 and 1 computed by a LightGBM classifier trained on severity, recency, user risk history, and institutional context. Analysts see the most urgent cases first without manual sorting.
 
-**Multi-Tenant Architecture** — Full institution-level isolation. Each bank or fintech gets its own users, policies, API keys, alert queues, and session data. A platform super admin can switch between tenants from the same console.
+**Multi-Tenant Architecture** - Full institution-level isolation. Each bank or fintech gets its own users, policies, API keys, alert queues, and session data. A platform super admin can switch between tenants from the same console.
 
-**Compliance Report Generation** — One-click RBI cybersecurity framework reports, alert summaries, and user risk exports in JSON or CSV format, with structured date-range filtering. Reports cover session analytics, step-up effectiveness, false positive rates, onboarding decisions, and PAM anomalies.
+**Compliance Report Generation** - One-click RBI cybersecurity framework reports, alert summaries, and user risk exports in JSON or CSV format, with structured date-range filtering. Reports cover session analytics, step-up effectiveness, false positive rates, onboarding decisions, and PAM anomalies.
 
-**PWA and Offline Support** — The admin portal and customer portal are fully Progressive Web Apps with a custom service worker, app manifest, and offline fallback page so your security team can stay responsive even on spotty connections.
+**PWA and Offline Support** - The admin portal and customer portal are fully Progressive Web Apps with a custom service worker, app manifest, and offline fallback page so your security team can stay responsive even on spotty connections.
 
-**15 Scheduled Background Tasks** — Celery Beat manages everything from alert auto-prioritization every 30 minutes to monthly behavioural profile rebuilds, so the platform keeps itself clean and current without manual intervention.
+**15 Scheduled Background Tasks** - Celery Beat manages everything from alert auto-prioritization every 30 minutes to monthly behavioural profile rebuilds, so the platform keeps itself clean and current without manual intervention.
 
 ---
 
@@ -360,18 +360,18 @@ TrustSphere-main/
 
 Before you run TrustSphere, make sure you have the following installed:
 
-* **Python 3.10 or higher** — [Download from python.org](https://www.python.org/downloads/)
-* **Redis 6.0 or higher** — Required for Celery task queue and rate limiting — [Install Redis](https://redis.io/docs/getting-started/installation/)
-* **pip** — Comes bundled with Python
-* **Git** — [Install Git](https://git-scm.com/)
-* **A virtual environment tool** — `venv` (built into Python) or `virtualenv`
+* **Python 3.10 or higher** - [Download from python.org](https://www.python.org/downloads/)
+* **Redis 6.0 or higher** - Required for Celery task queue and rate limiting - [Install Redis](https://redis.io/docs/getting-started/installation/)
+* **pip** - Comes bundled with Python
+* **Git** - [Install Git](https://git-scm.com/)
+* **A virtual environment tool** - `venv` (built into Python) or `virtualenv`
 
 Redis is required even in development. If Redis is unavailable when the server starts, Celery automatically falls back to synchronous eager mode and a warning is printed to the console.
 
 Optional for production:
 
-* **PostgreSQL 13+** — Recommended over SQLite for production deployments — [Install PostgreSQL](https://www.postgresql.org/download/)
-* **Gunicorn** — Already included in `requirements.txt`
+* **PostgreSQL 13+** - Recommended over SQLite for production deployments - [Install PostgreSQL](https://www.postgresql.org/download/)
+* **Gunicorn** - Already included in `requirements.txt`
 
 ### Installation
 
@@ -627,7 +627,7 @@ Evaluate risk for a user event and return a scored recommendation.
 | `channel` | string | No | `web_browser`, `mobile_app`, `api` |
 | `watchlist_match` | boolean | No | Pre-computed watchlist result |
 
-**Response** — `200 OK`
+**Response** - `200 OK`
 
 ```json
 {
@@ -689,11 +689,11 @@ Returns platform health status including database connectivity and version.
 
 Three configuration classes are defined in `app/config.py`:
 
-`DevelopmentConfig` — Sets `DEBUG=True`, `SESSION_COOKIE_SECURE=False`, and echoes the `SERVER_NAME` for Celery URL building. This is the default when `FLASK_ENV=development`.
+`DevelopmentConfig` - Sets `DEBUG=True`, `SESSION_COOKIE_SECURE=False`, and echoes the `SERVER_NAME` for Celery URL building. This is the default when `FLASK_ENV=development`.
 
-`ProductionConfig` — Sets `DEBUG=False`, `SESSION_COOKIE_SECURE=True`, and `SESSION_COOKIE_SAMESITE=Strict`. Use this in production.
+`ProductionConfig` - Sets `DEBUG=False`, `SESSION_COOKIE_SECURE=True`, and `SESSION_COOKIE_SAMESITE=Strict`. Use this in production.
 
-`TestingConfig` — Disables CSRF, uses an in-memory SQLite database, and sets `CELERY_TASK_ALWAYS_EAGER=True` so tasks run synchronously during tests.
+`TestingConfig` - Disables CSRF, uses an in-memory SQLite database, and sets `CELERY_TASK_ALWAYS_EAGER=True` so tasks run synchronously during tests.
 
 Select the configuration by setting `FLASK_ENV` to `development`, `production`, or `testing`.
 
@@ -701,13 +701,13 @@ Select the configuration by setting `FLASK_ENV` to `development`, `production`, 
 
 Each institution has exactly one active `RiskPolicy`. The policy controls:
 
-`threshold_low`, `threshold_medium`, `threshold_high` — Score boundaries (default: 30, 60, 80) that map to the Low, Medium, High, and Critical categories.
+`threshold_low`, `threshold_medium`, `threshold_high` - Score boundaries (default: 30, 60, 80) that map to the Low, Medium, High, and Critical categories.
 
-`stepup_rules` — A JSON array of step-up rules. Each rule specifies `risk_min`, `risk_max`, `channel` (`all`, `web_browser`, `mobile_app`), and `verification_method` (`push_notification`, `otp`, `biometric`, `video_kyc`, `agent_call`).
+`stepup_rules` - A JSON array of step-up rules. Each rule specifies `risk_min`, `risk_max`, `channel` (`all`, `web_browser`, `mobile_app`), and `verification_method` (`push_notification`, `otp`, `biometric`, `video_kyc`, `agent_call`).
 
-`ml_weight_config` — A JSON object overriding the default CRE signal weights for `device_trust`, `behavioural_deviation`, `geo_velocity`, `network_reputation`, `transaction_anomaly`, and `time_pattern`.
+`ml_weight_config` - A JSON object overriding the default CRE signal weights for `device_trust`, `behavioural_deviation`, `geo_velocity`, `network_reputation`, `transaction_anomaly`, and `time_pattern`.
 
-`channel_policies` — A JSON object with per-channel settings including `risk_boost` (additional score points for traffic from this channel) and `service_token_required`.
+`channel_policies` - A JSON object with per-channel settings including `risk_boost` (additional score points for traffic from this channel) and `service_token_required`.
 
 These are managed through the interactive Policy Builder UI in the admin panel, which generates the JSON automatically from a point-and-click rule editor.
 
