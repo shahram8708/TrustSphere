@@ -17,6 +17,26 @@ def create_app(config_name="development"):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    # Ensure rate limiter storage is reachable. If Redis is configured but
+    # not reachable, fall back to in-process memory storage so the app
+    # continues to serve requests instead of raising connection errors.
+    try:
+        storage_uri = app.config.get("RATELIMIT_STORAGE_URI")
+        if storage_uri and storage_uri.startswith("redis"):
+            try:
+                import redis as _redis
+
+                client = _redis.from_url(storage_uri)
+                client.ping()
+            except Exception as exc:  # pragma: no cover - runtime network issue
+                app.logger.warning(
+                    "Rate limiter Redis unavailable (%s); falling back to memory storage.",
+                    exc,
+                )
+                app.config["RATELIMIT_STORAGE_URI"] = "memory://"
+    except Exception:  # pragma: no cover - defensive guard
+        pass
+
     limiter.init_app(app)
     mail.init_app(app)
     csrf.init_app(app)
