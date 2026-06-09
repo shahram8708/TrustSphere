@@ -293,21 +293,43 @@ def login():
                 cre_result = ContinuousRiskEngine.evaluate(
                     portal_user.id, None, "login", context, portal_user.institution_id
                 )
+                # Determine CRE risk score (if available) and enforce thresholds:
+                # - 1..60: allow login
+                # - 61..80: require OTP verification
+                # - 81..100: block login entirely
+                risk_score = None
+                if cre_result is not None:
+                    try:
+                        risk_score = int(getattr(cre_result, "risk_score", None) or 0)
+                    except Exception:
+                        risk_score = None
 
-                # If CRE requests a step-up, initiate verification before completing login.
-                # Require step-up when CRE requests or when login is post-lock (requires verification)
-                if cre_result and (cre_result.recommended_action in {"stepup", "block"} or getattr(portal_user, "post_lock_verification_required", False)):
-                    # Select a verification method (policy driven). Prefer OTP where configured.
-                    method = StepUpOrchestrator.select_verification_method(
-                        cre_result.risk_score, "web_browser", portal_user.institution_id
-                    )
-                    # If this login is occurring after an account lock, always require OTP verification
-                    if getattr(portal_user, "post_lock_verification_required", False):
-                        method = "otp"
+                # Block very high risk logins (81-100)
+                if risk_score is not None and 81 <= risk_score <= 100:
+                    try:
+                        AuditLogger.log_from_request(
+                            portal_user,
+                            "login.blocked",
+                            details={"risk_score": risk_score},
+                        )
+                    except Exception:
+                        pass
+                    flash("Your login has been blocked due to high risk. Please contact your administrator.", "error")
+                    return render_template("auth/login.html", form=form)
+
+                # Require OTP for medium-high risk (61-80) or when post-lock verification is required
+                require_stepup = False
+                if getattr(portal_user, "post_lock_verification_required", False):
+                    require_stepup = True
+                elif risk_score is not None and 61 <= risk_score <= 80:
+                    require_stepup = True
+
+                if require_stepup:
+                    method = "otp"
                     challenge_data = None
                     if method:
                         challenge_data = StepUpOrchestrator.create_challenge(
-                            portal_user.id, method, cre_result.session_id, portal_user.institution_id
+                            portal_user.id, method, cre_result.session_id if cre_result else None, portal_user.institution_id
                         )
                         if challenge_data:
                             NotificationService.send_stepup_notification(portal_user.id, method, challenge_data)
@@ -316,7 +338,7 @@ def login():
                     flask_session["login_user_id"] = portal_user.id
                     flask_session["login_challenge_id"] = challenge_data.get("challenge_id") if challenge_data else None
                     flask_session["login_method"] = method
-                    flask_session["login_risk_score"] = cre_result.risk_score if cre_result else 50
+                    flask_session["login_risk_score"] = risk_score if risk_score is not None else 50
                     flask_session["login_session_id"] = cre_result.session_id if cre_result else None
                     flask_session["login_device_id"] = device_result.get("device_id") if device_result else None
                     flask_session["login_remember"] = bool(form.remember_me.data)
@@ -326,7 +348,7 @@ def login():
                     AuditLogger.log_from_request(
                         portal_user,
                         "login.stepup_initiated",
-                        details={"method": method, "risk_score": cre_result.risk_score if cre_result else None},
+                        details={"method": method, "risk_score": risk_score},
                     )
                     return redirect(url_for("auth.login_verify"))
 

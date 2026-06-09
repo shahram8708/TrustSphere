@@ -122,8 +122,8 @@ class User(db.Model, UserMixin):
     def increment_failed_login(self):
         """Track a failed login and lock after repeated failures."""
         self.failed_login_count = (self.failed_login_count or 0) + 1
-        if self.failed_login_count >= 5:
-            self.lock_account(15)
+        if self.failed_login_count >= 2:
+            self.lock_account(1)
 
     def get_risk_category(self):
         """Return the risk category for the current risk score."""
