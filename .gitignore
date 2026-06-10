@@ -21,3 +21,4 @@ celerybeat.pid
 *.csv
 *.json
 !app/static/manifest.json
+seed.py
